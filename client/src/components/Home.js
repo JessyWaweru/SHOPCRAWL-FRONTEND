@@ -1,4 +1,4 @@
-import React,{useState,useEffect} from "react";
+import React from "react";
 import Highlights from "./Highlights";
 import { Link } from "react-router-dom";
 import ProductsHome from "./ProductsHome";
@@ -6,75 +6,97 @@ import { useAuthContext } from "../providers/Auth.provider";
 
 function Home() {
   const auth = useAuthContext();
-  const isAuth = auth?.user;
-  const [isAdmin,setIsAdmin]=useState(false)
+  const user = auth?.user;
+  
+  // Simplified check: If user exists and admin is true
+  const isAdmin = user?.admin === true;
 
-
-  useEffect(()=>{
-    const user=JSON.parse(localStorage.getItem('user'))
-    if(user && user.admin===true){
-      setIsAdmin(true)
-    }
-  },[])
   return (
     <div>
-      <div className="h-screen">
-        <div className="relative h-[98%] flex items-center w-full justify-end pr-40 bg-[url(https://images.unsplash.com/photo-1570876050997-2fdefb00c004?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=870&q=80)] bg-cover">
-          <video autoPlay muted loop className="h-5/6">
-            <source
-              src="https://player.vimeo.com/video/195975354?h=dee66404ac"
-              type="video/mp4"
-            />
-          </video>
+      <div className="h-screen relative">
+        {/* Background Image/Video Container */}
+        <div 
+            className="h-full w-full flex items-center justify-end pr-40 bg-cover bg-center"
+            style={{
+                backgroundImage: `url('https://images.unsplash.com/photo-1570876050997-2fdefb00c004?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=870&q=80')`
+            }}
+        >
+          {/* Note: Standard <video> tags need a direct link to an .mp4 file. 
+              Vimeo player links usually require an <iframe> to work. 
+              I've commented this out so the background image shows clearly. 
+          */}
+          {/* <video autoPlay muted loop className="h-5/6 hidden md:block">
+            <source src="your-direct-video-link.mp4" type="video/mp4" />
+          </video> 
+          */}
         </div>
-        <div className="text-white text-xl flex flex-col pl-40 justify-center gap-6 absolute top-20 bg-white/30 h-full w-full">
-          {isAdmin &&(
-          <>
-          <h4  className="text-6xl font-semibold uppercase"> HELLO,
-            <span className="text-rose-600">ADMIN!</span></h4>
-            <h12 className="text-6xl font-semibold uppercase">WELCOME TO <br /><span className="text-rose-600">SHOPCRAWL</span></h12>
-            
-            <h8 className="text-2xl font-semibold uppercase"> <span className="text-rose-600">##</span>Fine tune the <span className="underline">Database</span> </h8>
-            <h8 className="text-2xl font-semibold uppercase"><span className="text-rose-600">##</span>With <span className="underline">Update</span> and <span className="underline">Delete</span> features</h8>
-          
-            </>)}
-          
-          </div>
 
-        <div className="text-white text-xl flex flex-col pl-40 justify-center gap-6 absolute top-20 bg-white/30 h-full w-full">
-          {!isAdmin &&(
-            <>
-<h1 className="text-6xl font-semibold uppercase">
-            Welcome to<br />
-            <span className="text-rose-600">SHOPCRAWL</span>
-          </h1>
-          <p>
-            Discover dynamic ways to view your online shopping experience
-            <br />compare stores
-             <br />
-           SHOPCRAWL has got you covered
-          </p>
-            
-        
+        {/* Text Overlay Content */}
+        <div className="absolute top-0 left-0 h-full w-full flex flex-col pl-20 md:pl-40 justify-center gap-6 bg-black/40 text-white">
           
-          {!isAuth ? (
-            <Link to="/signIn">
-              <button className="bg-rose-600 rounded-lg w-48 p-2 text-white hover:opacity-80">
-                Get started <i className="fa-solid fa-arrow-right ml-1"></i>
-              </button>
-            </Link>
+          {/* ---------------- ADMIN VIEW ---------------- */}
+          {isAdmin ? (
+            <div className="animate-fade-in-up">
+              <h4 className="text-6xl font-semibold uppercase tracking-wide">
+                HELLO, <span className="text-rose-600">ADMIN!</span>
+              </h4>
+              <h2 className="text-5xl font-semibold uppercase mt-4">
+                WELCOME TO <br />
+                <span className="text-rose-600">SHOPCRAWL</span>
+              </h2>
+              
+              <div className="mt-8 space-y-4 border-l-4 border-rose-600 pl-6">
+                <h3 className="text-2xl font-semibold uppercase">
+                   <span className="text-rose-600">##</span> Fine tune the <span className="underline decoration-rose-600">Database</span>
+                </h3>
+                <h3 className="text-2xl font-semibold uppercase">
+                   <span className="text-rose-600">##</span> With <span className="underline decoration-rose-600">Update</span> and <span className="underline decoration-rose-600">Delete</span> features
+                </h3>
+                
+                <Link to="/addProduct">
+                    <button className="mt-4 bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 px-8 rounded-full shadow-lg transition transform hover:scale-105">
+                        <i className="fa-solid fa-plus-circle mr-2"></i>
+                        Add New Product
+                    </button>
+                </Link>
+              </div>
+            </div>
           ) : (
-            <Link to="/products">
-              <button className="bg-rose-600 rounded-lg w-48 p-2 text-white hover:opacity-80">
-                <i className="fa-solid fa-calendar-days mr-2"></i>See all Products
-                <i className="fa-solid fa-arrow-right ml-1"></i>
-              </button>
-            </Link>
+            /* ---------------- CUSTOMER VIEW ---------------- */
+            <div className="animate-fade-in-up">
+              <h1 className="text-6xl font-semibold uppercase leading-tight">
+                Welcome to<br />
+                <span className="text-rose-600">SHOPCRAWL</span>
+              </h1>
+              <p className="text-xl md:text-2xl mt-4 max-w-lg font-light">
+                Discover dynamic ways to view your online shopping experience.
+                <br />
+                Compare stores. Save money.
+                <br />
+                <span className="font-bold text-rose-400">SHOPCRAWL</span> has got you covered.
+              </p>
+            
+              <div className="mt-10">
+                {!user ? (
+                    <Link to="/signIn">
+                    <button className="bg-rose-600 rounded-full w-48 py-3 text-white font-bold text-lg hover:bg-rose-700 shadow-lg transition transform hover:scale-105">
+                        Get Started <i className="fa-solid fa-arrow-right ml-2"></i>
+                    </button>
+                    </Link>
+                ) : (
+                    <Link to="/products">
+                    <button className="bg-rose-600 rounded-full w-56 py-3 text-white font-bold text-lg hover:bg-rose-700 shadow-lg transition transform hover:scale-105">
+                        <i className="fa-solid fa-shopping-bag mr-2"></i>
+                        Start Shopping
+                    </button>
+                    </Link>
+                )}
+              </div>
+            </div>
           )}
-            </>)} 
-        </div> 
-       
-      </div> 
+        </div>
+      </div>
+
       <Highlights />
       <ProductsHome />
     </div>

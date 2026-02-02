@@ -1,7 +1,7 @@
+import React from "react";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 
-import ProductsList from "./components/ProductsList";
-import { BrowserRouter } from "react-router-dom";
-import { Routes, Route } from "react-router-dom";
+// Components
 import Home from "./components/Home";
 import SignIn from "./components/signIn";
 import SignUp from "./components/signUp";
@@ -9,12 +9,18 @@ import SignUpAdmin from "./components/signUpAdmin";
 import Footer from "./components/Footer";
 import Navbar from "./components/Navbar";
 import ProductDetails from "./components/ProductDetails";
-import ProductsHome from "./components/ProductsHome"
-import Cart from "./components/Cart"
+import ProductsHome from "./components/ProductsHome";
+import ProductsList from "./components/ProductsList";
+import Cart from "./components/Cart";
+import UpdateProduct from "./components/updateProduct";
+import AddProduct from "./components/AddProduct"; // IMPORTED NEW FILE
+import ResetPassword from "./components/reset";
+
+// Providers
 import AuthProvider from "./providers/Auth.provider";
 import { CartProvider } from "./components/CartProvider";
-import UpdateProduct from "./components/updateProduct";
-import ResetPassword from "./components/reset";
+
+// Route Helpers
 const SecureRoute = (Component) => {
   return (
     <AuthProvider required={true}>
@@ -32,34 +38,33 @@ const BaseRoute = (Component) => {
     </AuthProvider>
   );
 };
+
 function App() {
   return (
-   
     <BrowserRouter>
-     <CartProvider>
-      <Routes>
-        <Route path="/" element={BaseRoute(Home)}></Route>
-        <Route path="/signIn" element={BaseRoute(SignIn)}></Route>
-        <Route path="/signUp" element={BaseRoute(SignUp)}></Route>
-        <Route path="/signUpAdmin" element={BaseRoute(SignUpAdmin)}></Route>
-        <Route
-          path="/ProductDetails/:id"
-          element={BaseRoute(ProductDetails)}
-        ></Route>
-        <Route path="/products" element={BaseRoute(ProductsList)}></Route>
-        <Route path="/ProductsHome" element={BaseRoute(ProductsHome)}></Route>
-        <Route path="/reset" element={BaseRoute(ResetPassword)}></Route>
-        <Route path="/ProductsList" element={BaseRoute(ProductsList)}></Route>
-        <Route path='/cart' element={SecureRoute(Cart)}/>
-        <Route
-          path="/updateProduct/:id"
-          element={SecureRoute(UpdateProduct)}
-        ></Route>
-      </Routes>
-      <Footer />
+      <CartProvider>
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/" element={BaseRoute(Home)} />
+          <Route path="/signIn" element={BaseRoute(SignIn)} />
+          <Route path="/signUp" element={BaseRoute(SignUp)} />
+          <Route path="/signUpAdmin" element={BaseRoute(SignUpAdmin)} />
+          <Route path="/products" element={BaseRoute(ProductsList)} />
+          <Route path="/ProductsHome" element={BaseRoute(ProductsHome)} />
+          <Route path="/ProductsList" element={BaseRoute(ProductsList)} />
+          <Route path="/ProductDetails/:id" element={BaseRoute(ProductDetails)} />
+          <Route path="/reset" element={BaseRoute(ResetPassword)} />
+
+          {/* Protected Routes (Login Required) */}
+          <Route path="/cart" element={SecureRoute(Cart)} />
+          <Route path="/updateProduct/:id" element={SecureRoute(UpdateProduct)} />
+          
+          {/* NEW ROUTE: Add Product */}
+          <Route path="/addProduct" element={SecureRoute(AddProduct)} />
+        </Routes>
+        <Footer />
       </CartProvider>
     </BrowserRouter>
-    
   );
 }
 

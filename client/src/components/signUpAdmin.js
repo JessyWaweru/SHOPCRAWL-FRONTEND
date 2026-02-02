@@ -1,58 +1,48 @@
 import React, { useState } from "react";
-//import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
-//these components are used for displaying notifications.Toast notifications are non-intrusive messages that appear temporarily on the screen 
 import "react-toastify/dist/ReactToastify.css";
 
-
 export default function SignUpAdmin() {
-  //const [csrfToken, setCsrfToken] = useState("");
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [age, setAge] = useState("");
   const [gender, setGender] = useState("");
-  const [admin,setAdmin]=useState("")
+  const [adminPasscode, setAdminPasscode] = useState(""); // Renamed for clarity
   const [isLoading, setisLoading] = useState(false);
-
-  /*useEffect(() => {
-    fetchCsrfToken();
-  }, []);
-
-  const fetchCsrfToken = async () => {
-    try {
-      const response = await fetch("/api/csrf-token");
-      const data = await response.json();
-      setCsrfToken(data.csrfToken);
-    } catch (error) {
-      console.error("Failed to fetch CSRF token:", error);
-    }
-  };*/
-  
 
   function handleFormSubmit(e) {
     e.preventDefault();
     setisLoading(true);
 
+    // LOGIC: Check if the entered passcode matches your secret code
+    // You can change "SECRET123" to whatever secret password you want admins to use.
+    const isAdmin = adminPasscode === "SECRET123";
+
+    if (!isAdmin && adminPasscode !== "") {
+        toast.error("Invalid Admin Passcode");
+        setisLoading(false);
+        return;
+    }
+
     const userDetails = {
       username: username,
       email: email,
-      password: password,
-      age: age,
+      // Map password to the Django field name
+      password_digest: password,
+      age: parseInt(age), // Ensure age is an integer
       gender: gender,
-      admin:admin
+      admin: isAdmin // Sends true or false to the backend
     };
 
-    fetch("http://localhost:3000/users", {
-      method: "POST",//create
+    // Updated URL to point to Django API
+    fetch("http://127.0.0.1:8000/api/users/", {
+      method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "http://localhost:3001",
-        //"X-CSRF-Token": csrfToken
       },
       body: JSON.stringify(userDetails),
-      //credentials: "include",
     })
     .then((response) => {
       if (!response.ok) {
@@ -62,9 +52,7 @@ export default function SignUpAdmin() {
     })
     .then((data) => {
       localStorage.setItem("user", JSON.stringify(data));
-      //local storage is a mechanism that allows web apps to store data locally within the user's browser i.e localStorage.setItem(key,value).it stores a key value pair
-      
-      window.location.href = "/products";//to redirect to products route
+      window.location.href = "/products";
     })
     .catch((error) => {
       toast.error(error.message);
@@ -81,6 +69,7 @@ export default function SignUpAdmin() {
         className="border w-96 rounded-lg shadow-lg p-4 flex flex-col gap-4"
       >
         <h1 className="text-center text-2xl text-rose-600">Sign Up Here</h1>
+        
         <h3 className="">Username</h3>
         <div>
           <input
@@ -91,6 +80,7 @@ export default function SignUpAdmin() {
             required
           />
         </div>
+
         <h3>Email</h3>
         <div>
           <input
@@ -101,6 +91,7 @@ export default function SignUpAdmin() {
             required
           />
         </div>
+
         <h4>Password</h4>
         <div>
           <input
@@ -111,17 +102,21 @@ export default function SignUpAdmin() {
             required
           />
         </div>
-        <h4>Location</h4>
+
+        {/* Updated Label and Type for Age */}
+        <h4>Age</h4>
         <div>
           <input
+            type="number"
             onChange={(event) => setAge(event.target.value)}
             value={age}
-            type="text"
-            
             className="border rounded-lg w-full p-3"
             required
+            min="1"
+            max="120"
           />
         </div>
+
         <div>
           <select
             value={gender}
@@ -136,18 +131,20 @@ export default function SignUpAdmin() {
             <option value="rather not say">Rather not say</option>
           </select>
         </div>
+
+        {/* Admin Passcode Section */}
         <h3 className="">ADMIN PASSCODE</h3>
-        <p></p>
         <div>
           <input
             type="password"
-            value={admin}
-            onChange={(event) => setAdmin(event.target.value)}
+            value={adminPasscode}
+            onChange={(event) => setAdminPasscode(event.target.value)}
+            // Kept your styling for the hidden text effect
             className={`border rounded-lg w-full p-3 text-black text-opacity-0 hover:text-opacity-100`}
-          
+            placeholder="Enter secret code to become admin"
           />
-        
         </div>
+
         <button
           type="submit"
           className="bg-rose-600 rounded-lg w-48 p-3 mt-2 text-white hover:opacity-80 m-auto"
@@ -161,6 +158,7 @@ export default function SignUpAdmin() {
             </div>
           )}
         </button>
+
         <p className="mt-2 text-center text-neutral-800 dark:text-neutral-200">
           Already have an account?
           <br />{" "}

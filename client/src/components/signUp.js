@@ -1,163 +1,213 @@
-import React, { useState } from "react";
-//import { useEffect } from "react";
-import { Link } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
+import { useAuthContext } from "../providers/Auth.provider"; 
 import "react-toastify/dist/ReactToastify.css";
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faEye, faEyeSlash } from '@fortawesome/free-solid-svg-icons';
 
-export default function SignUp() {
-  //const [csrfToken, setCsrfToken] = useState("");
-  const [username, setUsername] = useState("");
+function SignUp() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [age, setAge] = useState("");
-  const [gender, setGender] = useState("");
-
-  const [isLoading, setisLoading] = useState(false);
-
-  /*useEffect(() => {
-    fetchCsrfToken();
-  }, []);
-
-  const fetchCsrfToken = async () => {
-    try {
-      const response = await fetch("/api/csrf-token");
-      const data = await response.json();
-      setCsrfToken(data.csrfToken);
-    } catch (error) {
-      console.error("Failed to fetch CSRF token:", error);
-    }
-  };*/
+  const [confirmPassword, setConfirmPassword] = useState("");
   
+  // --- Visibility Toggles ---
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  function handleFormSubmit(e) {
-    e.preventDefault();
-    setisLoading(true);
+  // State for password feedback
+  const [passwordFeedback, setPasswordFeedback] = useState([]);
+  const [isPasswordValid, setIsPasswordValid] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  
+  const navigate = useNavigate();
+  const { setUser } = useAuthContext(); 
 
-    const userDetails = {
-      username: username,
+  // --- 1. Real-time Strict Password Validation ---
+  useEffect(() => {
+    const feedback = [];
+    if (password.length > 0) {
+        if (password.length < 6) feedback.push("At least 6 characters");
+        if (!/[A-Z]/.test(password)) feedback.push("A capital letter");
+        if (!/[0-9]/.test(password)) feedback.push("A number");
+        if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) feedback.push("A symbol (!@#$)");
+    }
+    
+    setPasswordFeedback(feedback);
+    setIsPasswordValid(password.length > 0 && feedback.length === 0);
+  }, [password]);
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    
+    if (password !== confirmPassword) {
+      toast.error("Passwords do not match!");
+      return;
+    }
+    
+    if (!isPasswordValid) {
+        toast.warning("Please meet all password requirements.");
+        return;
+    }
+
+    setIsLoading(true);
+
+    const userData = {
+      username: email.split('@')[0],
       email: email,
-      password: password,
-      age: age,
-      gender: gender,
       
+      // SEND BOTH NAMES so the backend captures one of them
+      password: password,       
+      password_digest: password, 
+      
+      age: 18,
+      admin: false
     };
+    try {
+      const response = await fetch("http://127.0.0.1:8000/api/users/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(userData),
+      });
 
-    fetch("http://localhost:3000/users", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "http://localhost:3001",
-        //"X-CSRF-Token": csrfToken
-      },
-      body: JSON.stringify(userDetails),
-      //credentials: "include",
-    })
-    .then((response) => {
-      if (!response.ok) {
-        throw new Error("Registration failed. Please try again.");
+      if (response.ok) {
+        const newUser = await response.json();
+        
+        // Auto-Login Logic
+        localStorage.setItem("user", JSON.stringify(newUser));
+        setUser(newUser);
+
+        toast.success("Welcome to Shopcrawl! You are now logged in.");
+        setTimeout(() => navigate("/"), 1000);
+
+      } else {
+        const errorData = await response.json();
+        const errorMessage = errorData.email ? errorData.email[0] : "Signup failed. Please try again.";
+        toast.error(errorMessage);
+        setIsLoading(false);
       }
-      return response.json();
-    })
-    .then((data) => {
-      localStorage.setItem("user", JSON.stringify(data));
-      window.location.href = "/products";
-    })
-    .catch((error) => {
-      toast.error(error.message);
-      setisLoading(false);
-    });
-  }
+    } catch (error) {
+      console.error("Error:", error);
+      toast.error("Server error. Please try again later.");
+      setIsLoading(false);
+    }
+  };
 
   return (
-    <div className="flex items-center justify-center min-h-screen">
-      <ToastContainer />
+    <div 
+        className="flex items-center justify-center min-h-screen bg-cover bg-center"
+        style={{
+            backgroundImage: `url('https://images.unsplash.com/photo-1557821552-17105176677c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1932&q=80')`
+        }}
+    >
+      <ToastContainer position="top-center" />
+      
+      <div className="bg-white/95 p-8 rounded-xl shadow-2xl w-full max-w-md backdrop-blur-sm mt-10 mb-10">
+        <h1 className="text-3xl font-bold text-center text-rose-600 mb-2">Create Account</h1>
+        <p className="text-gray-500 text-center mb-6">Join Shopcrawl today</p>
 
-      <form
-        onSubmit={handleFormSubmit}
-        className="border w-96 rounded-lg shadow-lg p-4 flex flex-col gap-4"
-      >
-        <h1 className="text-center text-2xl text-rose-600">Sign Up Here</h1>
-        <h3 className="">Username</h3>
-        <div>
-          <input
-            type="text"
-            value={username}
-            onChange={(event) => setUsername(event.target.value)}
-            className="border rounded-lg w-full p-3"
-            required
-          />
-        </div>
-        <h3>Email</h3>
-        <div>
-          <input
-            type="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            className="border rounded-lg w-full p-3"
-            required
-          />
-        </div>
-        <h4>Password</h4>
-        <div>
-          <input
-            type="password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            className="border rounded-lg w-full p-3"
-            required
-          />
-        </div>
-        <h4>Location</h4>
-        <div>
-          <input
-            onChange={(event) => setAge(event.target.value)}
-            value={age}
-            type="text"
-            
-            
-            className="border rounded-lg w-full p-3"
-            required
-          />
-        </div>
-        <div>
-          <select
-            value={gender}
-            onChange={(event) => setGender(event.target.value)}
-            id="gender"
-            name="gender"
-            className="border rounded-lg w-full p-3"
-          >
-            <option value="">Select gender</option>
-            <option value="male">Male</option>
-            <option value="female">Female</option>
-            <option value="rather not say">Rather not say</option>
-          </select>
-        </div>
-        
-        <button
-          type="submit"
-          className="bg-rose-600 rounded-lg w-48 p-3 mt-2 text-white hover:opacity-80 m-auto"
-        >
-          {!isLoading ? (
-            "Sign up"
-          ) : (
-            <div>
-              <i className="fa-solid fa-spinner animate-spin mr-2"></i>
-              Loading...
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          
+          {/* Email Field */}
+          <div>
+            <label className="block text-gray-700 font-semibold mb-1">Email Address</label>
+            <input
+              type="email"
+              placeholder="you@example.com"
+              className="border border-gray-300 rounded-lg w-full p-3 focus:outline-none focus:ring-2 focus:ring-rose-500 transition"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+
+          {/* Password Field */}
+          <div>
+            <label className="block text-gray-700 font-semibold mb-1">Password</label>
+            <div className="relative">
+                <input
+                    type={showPassword ? "text" : "password"} // Toggle type
+                    placeholder="••••••••"
+                    className={`border rounded-lg w-full p-3 pr-10 focus:outline-none focus:ring-2 transition ${
+                        password.length > 0 && !isPasswordValid ? "border-red-500 ring-red-200" : "border-gray-300 focus:ring-rose-500"
+                    }`}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                />
+                {/* Eye Icon */}
+                <span 
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-3.5 text-gray-500 cursor-pointer hover:text-rose-600 transition"
+                >
+                    <FontAwesomeIcon icon={showPassword ? faEyeSlash : faEye} />
+                </span>
             </div>
-          )}
-        </button>
-        <p className="mt-2 text-center text-neutral-800 dark:text-neutral-200">
-          Already have an account?
-          <br />{" "}
-          <Link
-            to="/signIn"
-            className="text-rose-600 text-primary transition duration-150 ease-in-out hover:text-primary-600 focus:text-primary-600 active:text-primary-700 dark:text-primary-400 dark:hover:text-primary-500 dark:focus:text-primary-500 dark:active:text-primary-600"
+            
+            {/* Password Requirements Checklist */}
+            {password.length > 0 && !isPasswordValid && (
+                <div className="mt-2 text-sm text-red-500 bg-red-50 p-2 rounded">
+                    <p className="font-bold">Missing requirements:</p>
+                    <ul className="list-disc list-inside">
+                        {passwordFeedback.map((msg, index) => (
+                            <li key={index}>{msg}</li>
+                        ))}
+                    </ul>
+                </div>
+            )}
+             {password.length > 0 && isPasswordValid && (
+                <p className="text-green-600 text-xs mt-1 font-bold">✔ Strong Password</p>
+             )}
+          </div>
+
+          {/* Confirm Password Field */}
+          <div>
+            <label className="block text-gray-700 font-semibold mb-1">Confirm Password</label>
+            <div className="relative">
+                <input
+                    type={showConfirmPassword ? "text" : "password"} // Toggle type
+                    placeholder="••••••••"
+                    className="border border-gray-300 rounded-lg w-full p-3 pr-10 focus:outline-none focus:ring-2 focus:ring-rose-500 transition"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                />
+                {/* Eye Icon */}
+                <span 
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-3.5 text-gray-500 cursor-pointer hover:text-rose-600 transition"
+                >
+                    <FontAwesomeIcon icon={showConfirmPassword ? faEyeSlash : faEye} />
+                </span>
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={isLoading || !isPasswordValid}
+            className={`font-bold rounded-lg p-3 mt-4 transition duration-300 shadow-lg transform active:scale-95 ${
+                isLoading || !isPasswordValid 
+                ? "bg-gray-400 cursor-not-allowed text-gray-200" 
+                : "bg-rose-600 text-white hover:bg-rose-700"
+            }`}
           >
-            Login Here
-          </Link>
-        </p>
-      </form>
+            {isLoading ? "Creating Account..." : "Sign Up & Login"}
+          </button>
+        </form>
+
+        <div className="mt-6 text-center border-t pt-4">
+          <p className="text-gray-600">
+            Already have an account?{" "}
+            <Link to="/signIn" className="text-rose-600 font-bold hover:underline">
+              Log in here
+            </Link>
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
+
+export default SignUp;
