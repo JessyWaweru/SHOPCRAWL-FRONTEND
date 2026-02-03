@@ -59,6 +59,8 @@ function App() {
           <Route path="/cart" element={SecureRoute(Cart)} />
           <Route path="/updateProduct/:id" element={SecureRoute(UpdateProduct)} />
           
+          <Route path="/products/:id" element={BaseRoute(ProductDetails)} />
+
           {/* NEW ROUTE: Add Product */}
           <Route path="/addProduct" element={SecureRoute(AddProduct)} />
         </Routes>

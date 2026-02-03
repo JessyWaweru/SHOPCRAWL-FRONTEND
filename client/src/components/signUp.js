@@ -55,32 +55,45 @@ function SignUp() {
     const userData = {
       username: email.split('@')[0],
       email: email,
-      
-      // SEND BOTH NAMES so the backend captures one of them
       password: password,       
       password_digest: password, 
-      
       age: 18,
       admin: false
     };
+
     try {
+      // 1. CREATE USER
       const response = await fetch("http://127.0.0.1:8000/api/users/", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(userData),
       });
 
       if (response.ok) {
-        const newUser = await response.json();
         
-        // Auto-Login Logic
-        localStorage.setItem("user", JSON.stringify(newUser));
-        setUser(newUser);
+        // 2. AUTO-LOGIN (Get the Token Immediately)
+        // We use the same credentials to hit the login endpoint
+        const loginResponse = await fetch("http://127.0.0.1:8000/api/login/", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: email, password: password }),
+        });
 
-        toast.success("Welcome to Shopcrawl! You are now logged in.");
-        setTimeout(() => navigate("/"), 1000);
+        const loginData = await loginResponse.json();
+
+        if (loginResponse.ok && loginData.token) {
+            // SUCCESS: Save Token & User
+            localStorage.setItem("token", loginData.token);
+            localStorage.setItem("user", JSON.stringify(loginData.user));
+            setUser(loginData.user);
+
+            toast.success("Account created! Logging you in...");
+            setTimeout(() => navigate("/"), 1500);
+        } else {
+            // Fallback if auto-login fails (rare)
+            toast.success("Account created! Please login.");
+            setTimeout(() => navigate("/signIn"), 1500);
+        }
 
       } else {
         const errorData = await response.json();

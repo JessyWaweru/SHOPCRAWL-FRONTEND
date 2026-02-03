@@ -1,13 +1,44 @@
-import React, { useContext } from "react";
-import { CartContext } from "./CartProvider";
+import React, { useState, useEffect } from "react";
 import ProductItem from "./productItem";
 import { Link } from "react-router-dom";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faHistory, faArrowRight } from "@fortawesome/free-solid-svg-icons";
+import { faHistory, faArrowRight, faSpinner } from "@fortawesome/free-solid-svg-icons";
 
 function Cart() {
-  // Grab the limit from context so we can display it dynamically
-  const { cart, HISTORY_LIMIT } = useContext(CartContext);
+  const [history, setHistory] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const HISTORY_LIMIT = 11; // Matches backend limit
+
+  useEffect(() => {
+    // 1. Get the token
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+        setLoading(false);
+        return; // If not logged in, history remains empty
+    }
+
+    // 2. Fetch History from Django API
+    fetch('http://127.0.0.1:8000/api/history/', {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Token ${token}` // Assuming you use Token Auth
+        }
+    })
+    .then(res => {
+        if (!res.ok) throw new Error("Failed to fetch history");
+        return res.json();
+    })
+    .then(data => {
+        setHistory(data); // data is an array of objects: [{ id, product: {...}, date_added }]
+        setLoading(false);
+    })
+    .catch(err => {
+        console.error("Error fetching history:", err);
+        setLoading(false);
+    });
+  }, []);
 
   return (
     <div 
@@ -18,6 +49,7 @@ function Cart() {
     >
         <div className="bg-white/90 p-8 rounded-xl shadow-2xl w-full max-w-6xl mt-10">
             
+            {/* --- HEADER --- */}
             <div className="flex flex-col items-center mb-8 border-b-2 border-rose-100 pb-4">
                 <div className="h-20 w-20 rounded-full bg-rose-600 text-white flex items-center justify-center text-3xl mb-4 shadow-md">
                     <FontAwesomeIcon icon={faHistory} />
@@ -26,13 +58,20 @@ function Cart() {
                     Search History
                 </h1>
                 
-                {/* --- NEW: Capping Notification --- */}
                 <p className="text-gray-500 mt-2 font-medium bg-gray-100 px-4 py-1 rounded-full text-sm">
                     <span className="text-rose-600 font-bold">Note:</span> We save your last <span className="font-bold text-gray-800">{HISTORY_LIMIT}</span> viewed items for quick access.
                 </p>
             </div>
 
-            {cart.length === 0 ? (
+            {/* --- LOADING STATE --- */}
+            {loading ? (
+                 <div className="text-center py-20">
+                    <FontAwesomeIcon icon={faSpinner} spin className="text-4xl text-rose-600 mb-4" />
+                    <p className="text-gray-600">Loading your history...</p>
+                 </div>
+            ) : history.length === 0 ? (
+                
+                /* --- EMPTY STATE --- */
                 <div className="text-center py-20">
                     <h2 className="text-2xl text-gray-600 font-light mb-6">
                         You haven't viewed any products details yet.
@@ -43,12 +82,18 @@ function Cart() {
                         </button>
                     </Link>
                 </div>
+
             ) : (
+
+                /* --- DATA LIST --- */
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {/* We reverse the array so the NEWEST items show first */}
-                    {[...cart].reverse().map((product) => (
-                        <div key={product.id} className="transform hover:scale-105 transition duration-300">
-                             <ProductItem {...product} />
+                    {/* Backend already sorts by newest first, so no .reverse() needed */}
+                    {history.map((item) => (
+                        <div key={item.id} className="transform hover:scale-105 transition duration-300">
+                             {/* The API returns structure: { id: 1, product: { ...productData } } 
+                                So we pass { ...item.product } to the component 
+                             */}
+                             <ProductItem {...item.product} />
                         </div>
                     ))}
                 </div>

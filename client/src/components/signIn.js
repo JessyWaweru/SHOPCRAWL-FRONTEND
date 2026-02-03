@@ -20,7 +20,6 @@ function SignIn() {
     setIsLoading(true);
 
     try {
-      // UPDATED: POST request to the new secure login endpoint
       const response = await fetch("http://127.0.0.1:8000/api/login/", {
         method: "POST",
         headers: {
@@ -35,16 +34,24 @@ function SignIn() {
       const data = await response.json();
 
       if (response.ok) {
-        // Success! The backend verified us and returned the user object
+        // --- SUCCESS ---
         console.log("Login Success:", data);
         
-        setUser(data);
-        localStorage.setItem("user", JSON.stringify(data));
+        // 1. Save Token (CRITICAL FOR HISTORY)
+        if (data.token) {
+            localStorage.setItem("token", data.token);
+        }
+
+        // 2. Save User Data
+        // The backend returns { token: '...', user: { ... } }
+        const userData = data.user || data; 
+        setUser(userData);
+        localStorage.setItem("user", JSON.stringify(userData));
         
         toast.success("Login Successful!");
         setTimeout(() => navigate("/"), 1000);
       } else {
-        // Failure! The backend told us why (Invalid Password / User not found)
+        // --- FAILURE ---
         console.error("Login Failed:", data);
         toast.error(data.error || "Invalid email or password.");
         setIsLoading(false);
