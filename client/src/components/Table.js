@@ -1,10 +1,24 @@
 import React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faStar, faStarHalfAlt, faExternalLinkAlt, faTruck, faMoneyBillWave, faTrophy, faExclamationTriangle } from '@fortawesome/free-solid-svg-icons';
+import { 
+    faStar, 
+    faStarHalfAlt, 
+    faExternalLinkAlt, 
+    faTruck, 
+    faMoneyBillWave, 
+    faTrophy, 
+    faExclamationTriangle,
+    faChartLine
+} from '@fortawesome/free-solid-svg-icons';
+
+// --- IMPORT STYLES ---
+import { tableStyles } from "../styles/TableStyles";
 
 function Table({ product }) {
     
+    // ==========================================
     // 1. DATA PREPARATION
+    // ==========================================
     const rawStores = [
         { name: "Amazon", color: "bg-orange-500", url: "https://amazon.com", data: product.amazon_data },
         { name: "Jumia", color: "bg-black", url: "https://jumia.co.ke", data: product.jumia_data },
@@ -19,16 +33,23 @@ function Table({ product }) {
             color: store.color,
             url: store.url,
             price: parseFloat(store.data.price),
-            rating: parseFloat(store.data.rating || 0), // Assumes 0-10 scale
+            rating: parseFloat(store.data.rating || 0), 
             shipCost: parseFloat(store.data.shipping_cost || 0),
             shipDays: parseFloat(store.data.shipping_days || 7) 
         }));
 
     if (activeStores.length === 0) {
-        return <div className="p-4 bg-red-50 text-red-600 text-center rounded-lg">Out of Stock Everywhere</div>;
+        return (
+            <div className={tableStyles.outOfStock}>
+                <FontAwesomeIcon icon={faExclamationTriangle} />
+                Out of Stock Everywhere
+            </div>
+        );
     }
 
-    // 2. ALGORITHM: "Quality-First" Logic
+    // ==========================================
+    // 2. ALGORITHM: "SmartRank" Logic
+    // ==========================================
     
     // A. Baselines
     const storesWithTotal = activeStores.map(s => ({ ...s, totalCost: s.price + s.shipCost }));
@@ -40,8 +61,7 @@ function Table({ product }) {
         // 1. Cost Score (45%)
         const costScore = (minTotalCost / store.totalCost) * 100;
 
-        // 2. Trust Score (35%) - [FIXED FOR 10-POINT SCALE]
-        // 10/10 = 100 points. 5/10 = 50 points.
+        // 2. Trust Score (35%) - Scale 0-10
         const trustScore = (store.rating / 10) * 100;
 
         // 3. Speed Score (20%)
@@ -50,8 +70,7 @@ function Table({ product }) {
         // 4. Initial Weighted Score
         let totalScore = (costScore * 0.45) + (trustScore * 0.35) + (speedScore * 0.20);
 
-        // 5. THE PENALTY BOX (Logical Check)
-        // If rating is bad (< 6.0/10), reduce score by 20%
+        // 5. Penalty Check (< 6.0 rating)
         let isPenalized = false;
         if (store.rating < 6.0) {
             totalScore = totalScore * 0.8; 
@@ -65,88 +84,93 @@ function Table({ product }) {
         };
     });
 
-    // C. Sort
+    // C. Sort (Highest Score First)
     rankedStores.sort((a, b) => b.totalScore - a.totalScore);
 
-    // --- Formatters ---
+    // ==========================================
+    // 3. HELPERS
+    // ==========================================
     const formatKSH = (amount) => {
         return new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES', maximumFractionDigits: 0 }).format(amount);
     };
 
-    // Helper: Convert 10-point scale to 5 stars for visual display
     const renderStars = (ratingOutOf10) => {
-        const ratingOutOf5 = ratingOutOf10 / 2; // Convert 8/10 -> 4/5
+        const ratingOutOf5 = ratingOutOf10 / 2;
         const fullStars = Math.floor(ratingOutOf5);
         const hasHalfStar = ratingOutOf5 % 1 >= 0.5;
 
         return (
             <div className="flex text-yellow-400 text-xs items-center">
                 {[...Array(5)].map((_, i) => {
-                    if (i < fullStars) {
-                        return <FontAwesomeIcon key={i} icon={faStar} />;
-                    } else if (i === fullStars && hasHalfStar) {
-                        return <FontAwesomeIcon key={i} icon={faStarHalfAlt} />;
-                    } else {
-                        return <FontAwesomeIcon key={i} icon={faStar} className="text-gray-300" />;
-                    }
+                    if (i < fullStars) return <FontAwesomeIcon key={i} icon={faStar} />;
+                    if (i === fullStars && hasHalfStar) return <FontAwesomeIcon key={i} icon={faStarHalfAlt} />;
+                    return <FontAwesomeIcon key={i} icon={faStar} className="text-gray-300" />;
                 })}
                 <span className="ml-1 text-gray-500 font-semibold text-[10px]">({ratingOutOf10}/10)</span>
             </div>
         );
     };
 
+    // ==========================================
+    // 4. RENDER
+    // ==========================================
     return (
-        <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-             <div className="p-4 bg-gray-50 border-b border-gray-200">
-                <h3 className="text-gray-700 font-bold uppercase text-sm tracking-wider">SmartRank™ Results (Quality & Price)</h3>
+        <div className={tableStyles.container}>
+            
+            {/* Header */}
+            <div className={tableStyles.header}>
+                <h3 className={tableStyles.headerTitle}>
+                    <FontAwesomeIcon icon={faChartLine} className="text-rose-600"/>
+                    SmartRank™ Analysis (Quality & Price)
+                </h3>
             </div>
             
-            <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-white">
+            <div className={tableStyles.wrapper}>
+                <table className={tableStyles.table}>
+                    <thead className={tableStyles.thead}>
                         <tr>
-                            <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Rank</th>
-                            <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Store</th>
-                            <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Total Pay</th> 
-                            <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Shipping</th>
-                            <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Reviews (10)</th>
-                            <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Smart Score</th>
-                            <th className="px-6 py-3"></th>
+                            <th className={tableStyles.th}>Rank</th>
+                            <th className={tableStyles.th}>Store</th>
+                            <th className={tableStyles.th}>Total Pay</th> 
+                            <th className={tableStyles.th}>Shipping</th>
+                            <th className={tableStyles.th}>Rating</th>
+                            <th className={tableStyles.th}>Smart Score</th>
+                            <th className={tableStyles.th}></th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-200 bg-white">
+                    <tbody className={tableStyles.tbody}>
                         {rankedStores.map((store, index) => (
-                            <tr key={store.name} className={`transition duration-150 ${index === 0 ? "bg-green-50/60" : "hover:bg-gray-50"}`}>
+                            <tr key={store.name} className={index === 0 ? tableStyles.trWinner : tableStyles.trBase + " " + tableStyles.trNormal}>
                                 
                                 {/* 1. Rank */}
-                                <td className="px-6 py-4 whitespace-nowrap">
+                                <td className={tableStyles.td}>
                                     <div className="flex items-center gap-2">
                                         {index === 0 ? (
-                                            <div className="h-8 w-8 rounded-full bg-yellow-400 text-white flex items-center justify-center shadow-sm">
+                                            <div className={tableStyles.rankBadge}>
                                                 <FontAwesomeIcon icon={faTrophy} className="text-sm" />
                                             </div>
                                         ) : (
-                                            <span className="text-gray-400 font-bold text-lg ml-2">#{index + 1}</span>
+                                            <span className={tableStyles.rankText}>#{index + 1}</span>
                                         )}
                                     </div>
                                 </td>
 
                                 {/* 2. Store */}
-                                <td className="px-6 py-4 whitespace-nowrap">
+                                <td className={tableStyles.td}>
                                     <div className="flex items-center">
-                                        <span className={`h-2.5 w-2.5 rounded-full mr-2 ${store.color}`}></span>
-                                        <span className="font-bold text-gray-800">{store.name}</span>
-                                        {index === 0 && <span className="ml-2 text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold uppercase tracking-wide">Best Value</span>}
+                                        <span className={`${tableStyles.storeDot} ${store.color}`}></span>
+                                        <span className={tableStyles.storeName}>{store.name}</span>
+                                        {index === 0 && <span className={tableStyles.bestValueBadge}>Best Value</span>}
                                     </div>
                                 </td>
 
                                 {/* 3. Total Cost */}
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                    <span className="text-gray-900 font-bold text-lg">{formatKSH(store.totalCost)}</span>
+                                <td className={tableStyles.td}>
+                                    <span className={tableStyles.priceText}>{formatKSH(store.totalCost)}</span>
                                 </td>
 
                                 {/* 4. Shipping Details */}
-                                <td className="px-6 py-4 whitespace-nowrap">
+                                <td className={tableStyles.td}>
                                     <div className="flex flex-col gap-1">
                                         <div className="flex items-center text-xs text-gray-600">
                                             <FontAwesomeIcon icon={faTruck} className="mr-2 text-gray-400 w-4"/> 
@@ -154,27 +178,27 @@ function Table({ product }) {
                                         </div>
                                         <div className="flex items-center text-xs text-gray-600">
                                             <FontAwesomeIcon icon={faMoneyBillWave} className="mr-2 text-gray-400 w-4"/>
-                                            <span className={store.shipCost === 0 ? "text-green-600 font-bold" : ""}>
+                                            <span className={store.shipCost === 0 ? tableStyles.freeShipText : ""}>
                                                 {store.shipCost === 0 ? "Free" : formatKSH(store.shipCost)}
                                             </span>
                                         </div>
                                     </div>
                                 </td>
 
-                                {/* 5. Reviews (Visualized as 5 stars but derived from 10) */}
-                                <td className="px-6 py-4 whitespace-nowrap">
+                                {/* 5. Reviews */}
+                                <td className={tableStyles.td}>
                                     {renderStars(store.rating)}
                                     {store.isPenalized && (
-                                        <span className="text-[10px] text-red-500 font-bold block mt-1">
-                                            <FontAwesomeIcon icon={faExclamationTriangle} /> Low Rating Penalty
+                                        <span className={tableStyles.penaltyText}>
+                                            <FontAwesomeIcon icon={faExclamationTriangle} /> Penalty Applied
                                         </span>
                                     )}
                                 </td>
 
                                 {/* 6. Smart Score */}
-                                <td className="px-6 py-4 whitespace-nowrap align-middle">
+                                <td className={tableStyles.td + " align-middle"}>
                                     <div className="w-24">
-                                        <div className="w-full bg-gray-200 rounded-full h-2">
+                                        <div className={tableStyles.progressBg}>
                                             <div 
                                                 className={`h-2 rounded-full shadow-sm ${
                                                     store.totalScore >= 80 ? 'bg-green-500' : 
@@ -183,17 +207,17 @@ function Table({ product }) {
                                                 style={{ width: `${store.totalScore}%` }}
                                             ></div>
                                         </div>
-                                        <span className="text-xs font-bold text-gray-500 mt-1 block">{store.totalScore}/100</span>
+                                        <span className={tableStyles.progressScore}>{store.totalScore}/100</span>
                                     </div>
                                 </td>
 
                                 {/* 7. Action */}
-                                <td className="px-6 py-4 whitespace-nowrap text-right">
+                                <td className={`${tableStyles.td} text-right`}>
                                     <a 
                                         href={store.url} 
                                         target="_blank" 
                                         rel="noreferrer"
-                                        className="text-rose-600 hover:text-white border border-rose-600 hover:bg-rose-600 px-3 py-1.5 rounded-md text-xs font-bold transition flex items-center gap-2 w-fit ml-auto"
+                                        className={tableStyles.visitBtn}
                                     >
                                         Visit <FontAwesomeIcon icon={faExternalLinkAlt} />
                                     </a>

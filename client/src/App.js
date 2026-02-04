@@ -48,6 +48,7 @@ function App() {
           <Route path="/" element={BaseRoute(Home)} />
           <Route path="/signIn" element={BaseRoute(SignIn)} />
           <Route path="/signUp" element={BaseRoute(SignUp)} />
+          <Route path="/reset-password" element={BaseRoute(ResetPassword)} />
           <Route path="/signUpAdmin" element={BaseRoute(SignUpAdmin)} />
           <Route path="/products" element={BaseRoute(ProductsList)} />
           <Route path="/ProductsHome" element={BaseRoute(ProductsHome)} />

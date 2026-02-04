@@ -1,7 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faSave, faArrowLeft, faStore, faStar } from "@fortawesome/free-solid-svg-icons";
+import { 
+    faSave, faArrowLeft, faStore, faTag, 
+    faImage, faAlignLeft, faBoxOpen
+} from "@fortawesome/free-solid-svg-icons";
+
+// --- IMPORT STYLES ---
+import { productFormStyles } from "../styles/ProductFormStyles";
 
 export default function ProductForm({
   handleSubmit,
@@ -10,158 +16,81 @@ export default function ProductForm({
   errorMsg = "",
   isSubmitting = false,
 }) {
-  // 1. INITIAL STATE
+  
+  // --- STATE ---
   const [formData, setFormData] = useState({
     name: "",
     about: "",
     image: "",
-    description: "", // Hidden field required by backend
+    description: "", // Hidden field
 
-    // Amazon
-    amazon_price: 0,
-    amazon_shipping: 0,
-    amazon_days: 0,
-    amazon_location: "",
-    amazon_reviews: 0,
-
-    // Jumia
-    jumia_price: 0,
-    jumia_shipping: 0,
-    jumia_days: 0,
-    jumia_location: "",
-    jumia_reviews: 0,
-
-    // Kilimall
-    kilimall_price: 0,
-    kilimall_shipping: 0,
-    kilimall_days: 0,
-    kilimall_location: "",
-    kilimall_reviews: 0,
-
-    // Shopify
-    shopify_price: 0,
-    shopify_shipping: 0,
-    shopify_days: 0,
-    shopify_location: "",
-    shopify_reviews: 0,
+    // Vendors
+    amazon_price: 0, amazon_shipping: 0, amazon_days: 0, amazon_location: "", amazon_reviews: 0,
+    jumia_price: 0, jumia_shipping: 0, jumia_days: 0, jumia_location: "", jumia_reviews: 0,
+    kilimall_price: 0, kilimall_shipping: 0, kilimall_days: 0, kilimall_location: "", kilimall_reviews: 0,
+    shopify_price: 0, shopify_shipping: 0, shopify_days: 0, shopify_location: "", shopify_reviews: 0,
   });
 
-  // 2. PRE-FILL LOGIC
+  // --- PRE-FILL ---
   useEffect(() => {
     if (initialData) {
-      setFormData((prev) => ({
-        ...prev,
-        ...initialData,
-      }));
+      setFormData((prev) => ({ ...prev, ...initialData }));
     }
   }, [initialData]);
 
-  // 3. HANDLE INPUT CHANGE
+  // --- HANDLERS ---
   const handleChange = (e) => {
     const { name, value, type } = e.target;
     let finalValue = value;
-
-    // Handle numbers: keep empty string for editing, otherwise parse
     if (type === "number") {
         finalValue = value === "" ? "" : parseFloat(value);
     }
-
     setFormData({ ...formData, [name]: finalValue });
   };
 
-  // 4. SUBMIT
- const onSubmit = (e) => {
+  const onSubmit = (e) => {
     e.preventDefault();
-
-    // The backend requires 'description', but we hid the input.
-    // So we assume Description is the same as About.
     const finalData = {
         ...formData,
         description: formData.description || formData.about || "No description provided." 
     };
-
     handleSubmit(finalData);
   };
 
-  // --- RENDER VENDOR SECTION ---
+  // --- RENDER VENDOR HELPER ---
   const renderVendorSection = (vendorName, colorClass) => {
     const prefix = vendorName.toLowerCase(); 
-    
     return (
-      <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 mb-6 shadow-sm">
-        <h3 className={`text-xl font-bold mb-4 uppercase flex items-center gap-2 ${colorClass}`}>
+      <div className={productFormStyles.vendorCard}>
+        <h3 className={`${productFormStyles.vendorTitle} ${colorClass}`}>
           <FontAwesomeIcon icon={faStore} /> {vendorName}
         </h3>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className={productFormStyles.vendorGrid}>
           {/* Price */}
           <div>
-            <label className="block text-gray-700 text-xs font-bold mb-2 uppercase">Price (KES)</label>
-            <input
-              type="number"
-              name={`${prefix}_price`}
-              value={formData[`${prefix}_price`]}
-              onChange={handleChange}
-              className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-rose-500 outline-none"
-              placeholder="0"
-            />
+            <label className={productFormStyles.vendorLabel}>Price</label>
+            <input type="number" name={`${prefix}_price`} value={formData[`${prefix}_price`]} onChange={handleChange} className={productFormStyles.inputField} placeholder="0" />
           </div>
-
-          {/* Shipping Cost */}
+          {/* Shipping */}
           <div>
-            <label className="block text-gray-700 text-xs font-bold mb-2 uppercase">Shipping Cost</label>
-            <input
-              type="number"
-              name={`${prefix}_shipping`}
-              value={formData[`${prefix}_shipping`]}
-              onChange={handleChange}
-              className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-rose-500 outline-none"
-              placeholder="0"
-            />
+            <label className={productFormStyles.vendorLabel}>Shipping</label>
+            <input type="number" name={`${prefix}_shipping`} value={formData[`${prefix}_shipping`]} onChange={handleChange} className={productFormStyles.inputField} placeholder="0" />
           </div>
-
-          {/* Delivery Days */}
+          {/* Days */}
           <div>
-            <label className="block text-gray-700 text-xs font-bold mb-2 uppercase">Delivery Days</label>
-            <input
-              type="number"
-              name={`${prefix}_days`}
-              value={formData[`${prefix}_days`]}
-              onChange={handleChange}
-              className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-rose-500 outline-none"
-              placeholder="0"
-            />
+            <label className={productFormStyles.vendorLabel}>Days</label>
+            <input type="number" name={`${prefix}_days`} value={formData[`${prefix}_days`]} onChange={handleChange} className={productFormStyles.inputField} placeholder="7" />
           </div>
-
-          {/* Location (Manual Input) */}
+          {/* Location */}
           <div>
-            <label className="block text-gray-700 text-xs font-bold mb-2 uppercase">Location</label>
-            <input
-              type="text"
-              name={`${prefix}_location`}
-              value={formData[`${prefix}_location`]}
-              onChange={handleChange}
-              className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-rose-500 outline-none"
-              placeholder="e.g. Nairobi CBD"
-            />
+            <label className={productFormStyles.vendorLabel}>Location</label>
+            <input type="text" name={`${prefix}_location`} value={formData[`${prefix}_location`]} onChange={handleChange} className={productFormStyles.inputField} placeholder="Nairobi" />
           </div>
-
-          {/* Average Reviews (0 - 10) */}
+          {/* Rating */}
           <div>
-            <label className="block text-gray-700 text-xs font-bold mb-2 uppercase flex items-center gap-1">
-                Average Rating <FontAwesomeIcon icon={faStar} className="text-yellow-400 text-xs"/>
-            </label>
-            <input
-              type="number"
-              name={`${prefix}_reviews`}
-              value={formData[`${prefix}_reviews`]}
-              onChange={handleChange}
-              step="0.1"
-              min="0"
-              max="10" 
-              className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-rose-500 outline-none"
-              placeholder="0.0 - 10.0"
-            />
+            <label className={productFormStyles.vendorLabel}>Rating (0-10)</label>
+            <input type="number" name={`${prefix}_reviews`} value={formData[`${prefix}_reviews`]} onChange={handleChange} step="0.1" max="10" className={productFormStyles.inputField} placeholder="4.5" />
           </div>
         </div>
       </div>
@@ -169,95 +98,126 @@ export default function ProductForm({
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-10 px-4">
-      <div className="max-w-5xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
-        
-        {/* Header */}
-        <div className="bg-gray-900 p-6 flex justify-between items-center text-white">
-          <Link to="/products" className="text-gray-300 hover:text-white transition flex items-center gap-2">
-            <FontAwesomeIcon icon={faArrowLeft} /> Back
-          </Link>
-          <h1 className="text-2xl font-bold">
-            {isUpdatePage ? "Update Product" : "Add New Product"}
-          </h1>
+    <div className={productFormStyles.pageContainer}>
+      
+      {/* 1. HEADER */}
+      <div className={productFormStyles.header}>
+        <div className={productFormStyles.headerContent}>
+            <div>
+                <Link to="/products" className={productFormStyles.backLink}>
+                    <FontAwesomeIcon icon={faArrowLeft} /> Back to Dashboard
+                </Link>
+                <h1 className={productFormStyles.title}>
+                    {isUpdatePage ? "Edit Product" : "Add New Product"}
+                </h1>
+                <p className={productFormStyles.subtitle}>
+                    {isUpdatePage ? "Update details, pricing, and vendor info." : "Fill in the details below to list a new item."}
+                </p>
+            </div>
         </div>
+      </div>
 
-        {/* Error Message */}
+      {/* 2. MAIN FORM CONTAINER */}
+      <div className={productFormStyles.formContainer}>
+        
+        {/* Error Banner */}
         {errorMsg && (
-          <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 m-6 rounded shadow-sm">
-            <p className="font-bold">Error</p>
-            <p>{errorMsg}</p>
+          <div className={productFormStyles.errorBanner}>
+            <p className="font-bold">Something went wrong:</p>
+            <p className="text-sm">{errorMsg}</p>
           </div>
         )}
 
-        <form onSubmit={onSubmit} className="p-8">
+        <form onSubmit={onSubmit}>
           
-          {/* --- BASIC INFO SECTION --- */}
-          <div className="mb-8 bg-blue-50/50 p-6 rounded-xl border border-blue-100">
-            <h2 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Basic Details</h2>
+          {/* SECTION A: BASIC INFO */}
+          <div className={productFormStyles.sectionCard}>
+            <h2 className={productFormStyles.sectionTitle}>
+                <FontAwesomeIcon icon={faBoxOpen} className="text-rose-600"/> 
+                Basic Information
+            </h2>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                {/* Name */}
                 <div>
-                    <label className="block text-gray-700 text-sm font-bold mb-2">Product Name</label>
-                    <input
-                        type="text"
-                        name="name"
-                        value={formData.name}
-                        onChange={handleChange}
-                        className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-rose-500 outline-none"
-                        required
-                    />
+                    <label className={productFormStyles.label}>Product Name</label>
+                    <div className={productFormStyles.inputWrapper}>
+                        <FontAwesomeIcon icon={faTag} className={productFormStyles.inputIcon}/>
+                        <input 
+                            type="text" 
+                            name="name" 
+                            value={formData.name} 
+                            onChange={handleChange} 
+                            className={`${productFormStyles.inputField} ${productFormStyles.inputWithIcon}`} 
+                            placeholder="e.g. iPhone 15 Pro" 
+                            required 
+                        />
+                    </div>
                 </div>
-
+                {/* Image */}
                 <div>
-                    <label className="block text-gray-700 text-sm font-bold mb-2">Image URL</label>
-                    <input
-                        type="text"
-                        name="image"
-                        value={formData.image}
-                        onChange={handleChange}
-                        className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-rose-500 outline-none"
-                        required
-                    />
+                    <label className={productFormStyles.label}>Image URL</label>
+                    <div className={productFormStyles.inputWrapper}>
+                        <FontAwesomeIcon icon={faImage} className={productFormStyles.inputIcon}/>
+                        <input 
+                            type="text" 
+                            name="image" 
+                            value={formData.image} 
+                            onChange={handleChange} 
+                            className={`${productFormStyles.inputField} ${productFormStyles.inputWithIcon}`} 
+                            placeholder="https://..." 
+                            required 
+                        />
+                    </div>
                 </div>
             </div>
 
-            <div className="mt-4">
-                <label className="block text-gray-700 text-sm font-bold mb-2">About / Description</label>
-                <textarea
-                    name="about"
-                    value={formData.about}
-                    onChange={handleChange}
-                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-rose-500 outline-none h-24 resize-none"
-                    placeholder="Brief summary of the product..."
-                    required
-                />
+            {/* About */}
+            <div>
+                <label className={productFormStyles.label}>Description / About</label>
+                <div className={productFormStyles.inputWrapper}>
+                    <FontAwesomeIcon icon={faAlignLeft} className={productFormStyles.inputIcon}/>
+                    <textarea 
+                        name="about" 
+                        value={formData.about} 
+                        onChange={handleChange} 
+                        className={`${productFormStyles.inputField} ${productFormStyles.inputWithIcon} h-32 resize-none`} 
+                        placeholder="Detailed product description..." 
+                        required 
+                    />
+                </div>
             </div>
           </div>
 
-          {/* --- VENDOR SECTIONS --- */}
-          <h2 className="text-xl font-bold text-gray-800 mb-6 pb-2 border-b">Vendor Pricing & Details</h2>
-          
-          {renderVendorSection("Amazon", "text-orange-500")}
-          {renderVendorSection("Jumia", "text-black")}
-          {renderVendorSection("Kilimall", "text-purple-600")}
-          {renderVendorSection("Shopify", "text-green-600")}
+          {/* SECTION B: VENDORS */}
+          <div className={productFormStyles.sectionCard}>
+            <h2 className={productFormStyles.sectionTitle}>
+                <FontAwesomeIcon icon={faStore} className="text-purple-600"/> 
+                Vendor Pricing & Logistics
+            </h2>
+            <div className="space-y-6">
+                {renderVendorSection("Amazon", "text-orange-500")}
+                {renderVendorSection("Jumia", "text-black")}
+                {renderVendorSection("Kilimall", "text-purple-600")}
+                {renderVendorSection("Shopify", "text-green-600")}
+            </div>
+          </div>
 
-          {/* Submit Button */}
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className={`w-full bg-rose-600 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-rose-700 transition transform hover:scale-[1.01] active:scale-95 flex items-center justify-center gap-2 text-lg ${
-                isSubmitting ? "opacity-50 cursor-not-allowed" : ""
-            }`}
-          >
-             {isSubmitting ? "Processing..." : (
-                 <>
-                    <FontAwesomeIcon icon={faSave} />
-                    {isUpdatePage ? "Save Changes" : "Create Product"}
-                 </>
-             )}
-          </button>
+          {/* SUBMIT BUTTON */}
+          <div className={productFormStyles.buttonWrapper}>
+            <button
+                type="submit"
+                disabled={isSubmitting}
+                className={`${productFormStyles.submitBtn} ${isSubmitting ? productFormStyles.btnDisabled : productFormStyles.btnActive}`}
+            >
+                {isSubmitting ? "Saving..." : (
+                    <>
+                        <FontAwesomeIcon icon={faSave} />
+                        {isUpdatePage ? "Save Changes" : "Create Product"}
+                    </>
+                )}
+            </button>
+          </div>
 
         </form>
       </div>

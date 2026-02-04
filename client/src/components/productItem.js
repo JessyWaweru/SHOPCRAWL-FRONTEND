@@ -3,10 +3,13 @@ import { Link } from "react-router-dom";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEye } from "@fortawesome/free-solid-svg-icons";
 
+// --- IMPORT STYLES ---
+import { productItemStyles } from "../styles/ProductItemStyles";
+
 function ProductItem(props) {
   const { id, image, name, amazon_data, jumia_data, kilimall_data, shopify_data } = props;
 
-  // --- PRICE LOGIC ---
+  // --- PRICE LOGIC (Kept exactly as is) ---
   const vendors = [amazon_data, jumia_data, kilimall_data, shopify_data];
   
   const validPrices = vendors
@@ -32,56 +35,54 @@ function ProductItem(props) {
   }
 
   return (
-    // Changed w-full to max-w-sm to prevent it from getting huge on wide screens
-    <div className="group relative bg-white rounded-lg shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden w-full max-w-xs mx-auto flex flex-col border border-gray-100">
+    <div className={productItemStyles.container}>
       
-      {/* 1. IMAGE CONTAINER (Reduced Height to h-48) */}
-      <div className="relative h-48 w-full overflow-hidden bg-gray-50 flex items-center justify-center">
+      {/* 1. IMAGE CONTAINER */}
+      <div className={productItemStyles.imageWrapper}>
         <img 
             src={image || "https://via.placeholder.com/300"} 
             alt={name} 
-            className="h-full w-full object-contain p-3 transition-transform duration-500 group-hover:scale-110"
+            className={productItemStyles.productImage}
         />
 
-        {/* Store Count Badge (Smaller) */}
+        {/* Store Count Badge */}
         {validPrices.length > 0 && (
-            <span className="absolute top-2 right-2 bg-rose-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm z-10 uppercase tracking-wide">
-                {validPrices.length} Stores
+            <span className={productItemStyles.storeBadge}>
+                {validPrices.length} {validPrices.length === 1 ? 'Store' : 'Stores'}
             </span>
         )}
 
         {/* HOVER OVERLAY */}
-        <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-[1px]">
+        <div className={productItemStyles.overlay}>
             <Link to={`/products/${id}`}>
-                {/* Smaller Button */}
                 <button 
                     title="View Details"
-                    className="bg-white text-gray-900 p-3 rounded-full hover:bg-rose-600 hover:text-white transition-all duration-300 transform hover:scale-110 shadow-lg"
+                    className={productItemStyles.viewBtn}
                 >
-                    <FontAwesomeIcon icon={faEye} className="text-sm"/>
+                    <FontAwesomeIcon icon={faEye} className={productItemStyles.viewIcon}/>
                 </button>
             </Link>
         </div>
       </div>
 
-      {/* 2. PRODUCT INFO (Tighter Padding) */}
-      <div className="p-3 text-center flex flex-col flex-grow justify-between">
-        {/* Smaller Title Font */}
-        <h3 className="text-gray-700 font-semibold text-sm truncate mb-1 group-hover:text-rose-600 transition-colors" title={name}>
+      {/* 2. PRODUCT INFO */}
+      <div className={productItemStyles.detailsContainer}>
+        {/* Title */}
+        <h3 className={productItemStyles.title} title={name}>
             {name}
         </h3>
         
-        {/* PRICE DISPLAY */}
-        <div className="mt-1">
-            <p className={`font-bold text-base ${validPrices.length > 0 ? "text-rose-600" : "text-gray-400"}`}>
+        {/* Price Section */}
+        <div className={productItemStyles.priceWrapper}>
+            <p className={`${productItemStyles.priceText} ${validPrices.length > 0 ? productItemStyles.priceActive : productItemStyles.priceSoldOut}`}>
                 {priceDisplay}
             </p>
             
             {/* Comparison Label */}
             {validPrices.length > 1 && (
-                <p className="text-[10px] text-gray-400 uppercase tracking-wide font-medium">
+                <span className={productItemStyles.compareText}>
                     Compare {validPrices.length} Vendors
-                </p>
+                </span>
             )}
         </div>
       </div>

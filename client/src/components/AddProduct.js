@@ -52,8 +52,7 @@ export default function AddProduct() {
 
   return (
     <div>
-        <ToastContainer />
-        {/* We pass isUpdatePage={false} so the form knows it's empty */}
+        <ToastContainer position="top-center" theme="colored" />
         <ProductForm
             isUpdatePage={false}
             handleSubmit={handleCreateProduct}

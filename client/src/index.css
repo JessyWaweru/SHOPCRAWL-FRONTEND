@@ -1,3 +1,11 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+
+body {
+  font-family: 'Outfit', sans-serif; /* The new font */
+  background-color: #F8FAFC; /* Slate-50: Softer than harsh white */
+  color: #1E293B; /* Slate-800: Softer than harsh black */
+  -webkit-font-smoothing: antialiased; /* Makes text sharper */
+}

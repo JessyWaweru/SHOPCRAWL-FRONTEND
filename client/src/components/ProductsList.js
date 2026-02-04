@@ -1,14 +1,18 @@
 import React, { useEffect, useState } from "react";
-import ProductItem from "./productItem";
+import ProductItem from "./productItem"; 
 import Searchbar from "./Searchbar";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faFire } from "@fortawesome/free-solid-svg-icons";
+import { faFire, faSearch } from "@fortawesome/free-solid-svg-icons";
+
+// --- IMPORT STYLES ---
+import { productsListStyles } from "../styles/ProductsListStyles";
 
 const ProductsList = () => {
   const [products, setProducts] = useState([]);
   const [searchValue, setSearchValue] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
   
-  // 1. Get all products from Django API
+  // 1. Get all products
   useEffect(() => {
     fetch("http://127.0.0.1:8000/api/products/")
       .then((response) => {
@@ -17,22 +21,19 @@ const ProductsList = () => {
       })
       .then((data) => {
         setProducts(data);
+        setIsLoading(false);
       })
       .catch((error) => {
         console.error("Error:", error);
+        setIsLoading(false);
       });
   }, []);
 
   // 2. INSTANT FILTER LOGIC
-  // We filter directly based on the 'searchValue' state.
-  // This runs on every render, so as soon as 'searchValue' changes, the list updates.
   const displayProducts = products.filter((product) => {
-      if (searchValue === "") return true; // Show all if empty
+      if (searchValue === "") return true;
 
       const lowerSearch = searchValue.toLowerCase();
-      
-      // APPROXIMATE MATCHING:
-      // Check if the search term exists in the Name OR the Description
       return (
           product.name.toLowerCase().includes(lowerSearch) || 
           (product.description && product.description.toLowerCase().includes(lowerSearch))
@@ -40,47 +41,63 @@ const ProductsList = () => {
   });
 
   return (
-    <div 
-        className="bg-cover bg-center min-h-screen"
-        style={{
-            backgroundImage:`url('https://images.unsplash.com/photo-1570876050997-2fdefb00c004?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=870&q=80')`
-        }}
-    >
-      <div className="w-3/4 m-auto p-4 flex flex-col gap-4 min-h-screen">
-        {/* Header */}
-        <div className="flex gap-2 text-4xl items-center py-5 mx-auto bg-white/80 p-6 rounded-full shadow-lg mt-4">
-          <div className="h-24 w-24 rounded-full bg-rose-600 text-white flex items-center justify-center animate-pulse">
-            <FontAwesomeIcon icon={faFire} className="fa-solid"/>
-          </div>
-          <h1 className="text-gray-800 border-b-4 border-rose-600 font-bold uppercase tracking-wider ml-4">
-            HOTTEST PRODUCTS
-          </h1>
+    <div className={productsListStyles.pageContainer}>
+      
+      {/* 1. HEADER */}
+      <div className={productsListStyles.headerContainer}>
+        <div className={productsListStyles.badge}>
+            <FontAwesomeIcon icon={faFire} className="animate-pulse" />
+            Trending Now
         </div>
+        <h1 className={productsListStyles.title}>
+            Hottest Products
+        </h1>
+        <p className={productsListStyles.subtitle}>
+            Browse our entire collection. Use the search bar below to filter by name, brand, or category instantly.
+        </p>
+      </div>
 
-        {/* Search Bar - No Button Needed for Filter */}
-        <div className="flex items-center justify-center w-full mb-8">
-            {/* We pass setSearchValue directly. The Searchbar component updates it, 
-                and React re-renders this list instantly. */}
-            <Searchbar 
-                setSearchValue={setSearchValue} 
-                handleSearch={() => {}} // Empty function since it's now instant
-            />
-        </div>
+      {/* 2. SEARCH BAR */}
+      <div className={productsListStyles.searchSection}>
+        {/* We assume Searchbar has its own internal styling, but we wrap it to position it correctly */}
+        <Searchbar 
+            setSearchValue={setSearchValue} 
+            handleSearch={() => {}} 
+        />
+      </div>
 
-        {/* Product Grid */}
-        <div className="flex flex-wrap justify-center gap-6">
-          {displayProducts.map((product) => (
-               <ProductItem key={product.id} {...product} />
-          ))}
-          
-          {/* Empty State */}
-          {searchValue && displayProducts.length === 0 && (
-              <div className="text-white text-2xl font-bold bg-black/50 p-4 rounded-lg text-center">
-                  <p>No products found matching "{searchValue}"</p>
-                  <p className="text-sm font-normal mt-2">Try searching for keywords like "shoe", "phone", or "beauty".</p>
-              </div>
-          )}
-        </div>
+      {/* 3. PRODUCT GRID */}
+      <div className={productsListStyles.gridContainer}>
+        
+        {/* LOADING STATE */}
+        {isLoading && (
+             <div className="col-span-full text-center py-20 text-gray-500 font-bold text-lg animate-pulse">
+                Loading products...
+             </div>
+        )}
+
+        {/* DATA */}
+        {!isLoading && displayProducts.map((product) => (
+            // Added 'w-full h-full' to ensure cards stretch nicely
+            <div key={product.id} className="w-full h-full flex justify-center">
+                <ProductItem {...product} />
+            </div>
+        ))}
+        
+        {/* EMPTY STATE */}
+        {!isLoading && searchValue && displayProducts.length === 0 && (
+            <div className={productsListStyles.emptyStateContainer}>
+                <div className={productsListStyles.emptyIcon}>
+                    <FontAwesomeIcon icon={faSearch} />
+                </div>
+                <h3 className={productsListStyles.emptyTitle}>
+                    No matches found
+                </h3>
+                <p className={productsListStyles.emptyText}>
+                    We couldn't find any products matching "<strong>{searchValue}</strong>". Try searching for "shoe", "phone", or check your spelling.
+                </p>
+            </div>
+        )}
       </div>
     </div>
   );

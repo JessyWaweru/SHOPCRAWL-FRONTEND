@@ -1,205 +1,342 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
-import { useAuthContext } from "../providers/Auth.provider"; 
 import "react-toastify/dist/ReactToastify.css";
+
+// Import Auth Context
+import { useAuthContext } from "../providers/Auth.provider";
+
+// Icons
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEye, faEyeSlash, faUserShield } from '@fortawesome/free-solid-svg-icons';
+import { 
+    faEnvelope, 
+    faLock, 
+    faShieldAlt, 
+    faUserPlus,
+    faShoppingBag,
+    faEye,       
+    faEyeSlash,
+    faInfoCircle,
+    faUserShield 
+} from "@fortawesome/free-solid-svg-icons";
+
+// --- IMPORT STYLES ---
+import { authStyles } from "../styles/AuthStyles";
 
 function SignUp() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  
-  // --- ADMIN PASSCODE (Optional) ---
-  const [adminPasscode, setAdminPasscode] = useState("");
-  const SECRET_ADMIN_CODE = "admin123"; // The secret key
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+    password_confirmation: "",
+    recovery_pin: "",
+    admin_code: "" 
+  });
 
-  // --- Visibility Toggles ---
+  // --- VISIBILITY STATES ---
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [showAdminPasscode, setShowAdminPasscode] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [showPin, setShowPin] = useState(false);
+  
+  // Toggle for showing the Admin Input field
+  const [showAdminInput, setShowAdminInput] = useState(false);
 
-  // Validation State
-  const [passwordFeedback, setPasswordFeedback] = useState([]);
-  const [isPasswordValid, setIsPasswordValid] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   
   const navigate = useNavigate();
   const { setUser } = useAuthContext(); 
 
-  // --- Real-time Password Validation ---
-  useEffect(() => {
-    const feedback = [];
-    if (password.length > 0) {
-        if (password.length < 6) feedback.push("At least 6 characters");
-        if (!/[A-Z]/.test(password)) feedback.push("A capital letter");
-        if (!/[0-9]/.test(password)) feedback.push("A number");
-        if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) feedback.push("A symbol (!@#$)");
-    }
-    setPasswordFeedback(feedback);
-    setIsPasswordValid(password.length > 0 && feedback.length === 0);
-  }, [password]);
+  // --- HANDLERS ---
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+  };
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-    
-    if (password !== confirmPassword) {
-      toast.error("Passwords do not match!");
-      return;
-    }
-    
-    if (!isPasswordValid) {
-        toast.warning("Please meet all password requirements.");
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    const { password, password_confirmation, recovery_pin, email, admin_code } = formData;
+
+    // --- 1. VALIDATION CHECKS ---
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    const hasSymbol = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+    const isValidLength = password.length >= 8;
+
+    if (!isValidLength || !hasUpperCase || !hasNumber || !hasSymbol) {
+        toast.error("Password too weak! Must have 8+ chars, 1 capital, 1 number & 1 symbol.");
+        setIsLoading(false);
         return;
     }
 
-    // --- CHECK ADMIN STATUS ---
-    let isAdmin = false;
-    if (adminPasscode.trim().length > 0) {
-        if (adminPasscode === SECRET_ADMIN_CODE) {
-            isAdmin = true;
-        } else {
-            toast.error("Invalid Admin Passcode! Clear it if you are a normal user.");
-            return;
-        }
+    if (password !== password_confirmation) {
+        toast.error("Passwords do not match!");
+        setIsLoading(false);
+        return;
     }
 
-    setIsLoading(true);
+    if (recovery_pin.length < 4) {
+        toast.error("Recovery PIN must be at least 4 digits.");
+        setIsLoading(false);
+        return;
+    }
 
-    const userData = {
-      username: email.split('@')[0],
-      email: email,
-      password: password,       
-      password_digest: password, 
-      age: 18,
-      admin: isAdmin // Sends true if code matched, false otherwise
+    // --- 2. ADMIN LOGIC ---
+    const isAdmin = admin_code === "secret123";
+
+    // --- 3. PREPARE DATA ---
+    const userPayload = {
+        username: email, 
+        email: email,
+        password: password,
+        recovery_pin: recovery_pin,
+        admin: isAdmin 
     };
 
     try {
-      // 1. CREATE USER
-      const response = await fetch("http://127.0.0.1:8000/api/users/", {
+      // --- STEP A: CREATE ACCOUNT ---
+      const registerResponse = await fetch("http://127.0.0.1:8000/api/users/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(userData),
+        body: JSON.stringify(userPayload),
       });
 
-      if (response.ok) {
-        
-        // 2. AUTO-LOGIN (To get the Token)
-        const loginResponse = await fetch("http://127.0.0.1:8000/api/login/", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email: email, password: password }),
-        });
+      const data = await registerResponse.json();
 
-        const loginData = await loginResponse.json();
+      if (registerResponse.ok) {
+        const successMsg = isAdmin ? "Admin Account Created!" : "Account Created!";
+        toast.success(`${successMsg} Logging you in...`);
 
-        if (loginResponse.ok && loginData.token) {
-            // --- CRITICAL STEP: SAVE TO LOCAL STORAGE ---
-            // This puts the "Key Card" in the user's pocket
-            localStorage.setItem("token", loginData.token);
-            localStorage.setItem("user", JSON.stringify(loginData.user));
-            setUser(loginData.user);
+        // --- STEP B: AUTO-LOGIN ---
+        try {
+            const loginResponse = await fetch("http://127.0.0.1:8000/api/login/", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, password }),
+            });
 
-            const msg = isAdmin ? "Welcome Admin! Logging in..." : "Account created! Logging in...";
-            toast.success(msg);
-            setTimeout(() => navigate("/"), 1500);
-        } else {
-            toast.success("Account created! Please login manually.");
-            setTimeout(() => navigate("/signIn"), 1500);
+            const loginData = await loginResponse.json();
+
+            if (loginResponse.ok) {
+                if (loginData.token) localStorage.setItem("token", loginData.token);
+                
+                const userData = loginData.user || loginData;
+                setUser(userData);
+                localStorage.setItem("user", JSON.stringify(userData));
+
+                setTimeout(() => navigate("/"), 1500);
+            } else {
+                toast.warning("Auto-login failed. Please sign in manually.");
+                setTimeout(() => navigate("/signin"), 2000);
+            }
+
+        } catch (loginError) {
+            console.error("Auto-login failed:", loginError);
+            navigate("/signin");
         }
 
       } else {
-        const errorData = await response.json();
-        const errorMessage = errorData.email ? errorData.email[0] : "Signup failed.";
-        toast.error(errorMessage);
+        // --- IMPROVED ERROR HANDLING ---
+        
+        // Check for specific "Already Exists" errors from Django
+        if (data.username && Array.isArray(data.username) && data.username[0].includes("already exists")) {
+             toast.error("Account already exists! Please Login.");
+        } 
+        else if (data.email && Array.isArray(data.email) && data.email[0].includes("already exists")) {
+             toast.error("This email is already taken. Try resetting your password.");
+        } 
+        else {
+             // Fallback for other errors
+             const errorMessage = data.detail || "Failed to create account.";
+             toast.error(`Error: ${errorMessage}`);
+        }
         setIsLoading(false);
       }
+
     } catch (error) {
-      console.error("Error:", error);
+      console.error("Signup Error:", error);
       toast.error("Server error. Please try again later.");
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-cover bg-center"
-        style={{ backgroundImage: `url('https://images.unsplash.com/photo-1557821552-17105176677c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1932&q=80')` }}>
-      <ToastContainer position="top-center" />
+    <div className={authStyles.container}>
+      <ToastContainer position="top-center" theme="colored" />
       
-      <div className="bg-white/95 p-8 rounded-xl shadow-2xl w-full max-w-md backdrop-blur-sm mt-10 mb-10">
-        <h1 className="text-3xl font-bold text-center text-rose-600 mb-2">Create Account</h1>
-        <p className="text-gray-500 text-center mb-6">Join Shopcrawl today</p>
-
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          
-          {/* Email */}
-          <div>
-            <label className="block text-gray-700 font-semibold mb-1">Email Address</label>
-            <input type="email" placeholder="you@example.com" className="border border-gray-300 rounded-lg w-full p-3 outline-none focus:ring-2 focus:ring-rose-500 transition"
-              value={email} onChange={(e) => setEmail(e.target.value)} required />
-          </div>
-
-          {/* Password */}
-          <div>
-            <label className="block text-gray-700 font-semibold mb-1">Password</label>
-            <div className="relative">
-                <input type={showPassword ? "text" : "password"} placeholder="••••••••"
-                    className={`border rounded-lg w-full p-3 pr-10 outline-none focus:ring-2 transition ${password.length > 0 && !isPasswordValid ? "border-red-500 ring-red-200" : "border-gray-300 focus:ring-rose-500"}`}
-                    value={password} onChange={(e) => setPassword(e.target.value)} required />
-                <span onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-3.5 text-gray-500 cursor-pointer hover:text-rose-600 transition">
-                    <FontAwesomeIcon icon={showPassword ? faEyeSlash : faEye} />
-                </span>
-            </div>
-            {/* Checklist */}
-            {password.length > 0 && !isPasswordValid && (
-                <div className="mt-2 text-sm text-red-500 bg-red-50 p-2 rounded">
-                    <p className="font-bold">Missing requirements:</p>
-                    <ul className="list-disc list-inside">{passwordFeedback.map((msg, i) => <li key={i}>{msg}</li>)}</ul>
+      <div className={authStyles.card}>
+        
+        {/* --- LEFT SIDE: BRANDING --- */}
+        <div className={authStyles.brandSection}>
+            <div className={authStyles.brandPattern}></div>
+            <div className={authStyles.brandContent}>
+                <div className="flex items-center gap-3 text-white mb-8">
+                    <div className="bg-white/20 p-3 rounded-xl backdrop-blur-sm">
+                        <FontAwesomeIcon icon={faShoppingBag} className="text-2xl"/>
+                    </div>
+                    <span className="text-2xl font-extrabold tracking-tight">Shopcrawl</span>
                 </div>
-            )}
-             {password.length > 0 && isPasswordValid && <p className="text-green-600 text-xs mt-1 font-bold">✔ Strong Password</p>}
-          </div>
-
-          {/* Confirm Password */}
-          <div>
-            <label className="block text-gray-700 font-semibold mb-1">Confirm Password</label>
-            <div className="relative">
-                <input type={showConfirmPassword ? "text" : "password"} placeholder="••••••••"
-                    className="border border-gray-300 rounded-lg w-full p-3 pr-10 outline-none focus:ring-2 focus:ring-rose-500 transition"
-                    value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
-                <span onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-3.5 text-gray-500 cursor-pointer hover:text-rose-600 transition">
-                    <FontAwesomeIcon icon={showConfirmPassword ? faEyeSlash : faEye} />
-                </span>
             </div>
-          </div>
-
-          {/* --- ADMIN PASSCODE (Optional) --- */}
-          <div className="mt-2 p-4 bg-gray-50 rounded-lg border border-gray-200">
-            <label className="block text-gray-700 font-bold mb-1 flex items-center gap-2">
-                <FontAwesomeIcon icon={faUserShield} className="text-rose-600"/>
-                Admin Passcode (Optional)
-            </label>
-            <div className="relative">
-                <input type={showAdminPasscode ? "text" : "password"} placeholder="Enter code to become Admin"
-                    className="border border-gray-300 rounded-lg w-full p-3 pr-10 outline-none focus:ring-2 focus:ring-rose-500 transition bg-white"
-                    value={adminPasscode} onChange={(e) => setAdminPasscode(e.target.value)} />
-                 <span onClick={() => setShowAdminPasscode(!showAdminPasscode)} className="absolute right-3 top-3.5 text-gray-500 cursor-pointer hover:text-rose-600 transition">
-                    <FontAwesomeIcon icon={showAdminPasscode ? faEyeSlash : faEye} />
-                </span>
+            <div className={authStyles.brandContent}>
+                <h2 className="text-3xl font-bold mb-4">Start Saving Today.</h2>
+                <p className={authStyles.quote}>
+                    "Join thousands of shoppers finding the best deals across Amazon, Jumia, and Kilimall instantly."
+                </p>
             </div>
-            <p className="text-xs text-gray-400 mt-1">Leave blank for a normal user account.</p>
-          </div>
+        </div>
 
-          <button type="submit" disabled={isLoading || !isPasswordValid}
-            className={`font-bold rounded-lg p-3 mt-4 transition duration-300 shadow-lg transform active:scale-95 ${isLoading || !isPasswordValid ? "bg-gray-400 cursor-not-allowed text-gray-200" : "bg-rose-600 text-white hover:bg-rose-700"}`}>
-            {isLoading ? "Creating Account..." : "Sign Up & Login"}
-          </button>
-        </form>
+        {/* --- RIGHT SIDE: FORM --- */}
+        <div className={authStyles.formSection}>
+            <div className="mb-6">
+                <h2 className={authStyles.headerTitle}>Create Account</h2>
+                <p className={authStyles.headerSub}>Fill in your details below to get started.</p>
+            </div>
 
-        <div className="mt-6 text-center border-t pt-4">
-          <p className="text-gray-600">Already have an account? <Link to="/signIn" className="text-rose-600 font-bold hover:underline">Log in here</Link></p>
+            <form onSubmit={handleSubmit}>
+              
+              {/* EMAIL */}
+              <div className={authStyles.inputGroup}>
+                 <label className={authStyles.label}>Email Address</label>
+                 <div className={authStyles.inputWrapper}>
+                    <FontAwesomeIcon icon={faEnvelope} className={authStyles.inputIcon} />
+                    <input
+                        name="email"
+                        type="email"
+                        required
+                        className={authStyles.inputField}
+                        placeholder="john@example.com"
+                        value={formData.email}
+                        onChange={handleChange}
+                    />
+                 </div>
+              </div>
+
+              {/* RECOVERY PIN */}
+              <div className="mb-5 bg-blue-50 p-4 rounded-xl border border-blue-100">
+                 <label className={`${authStyles.label} text-blue-800`}>
+                    Recovery PIN <span className="font-normal opacity-70 text-xs">(Required for reset)</span>
+                 </label>
+                 <div className={authStyles.inputWrapper}>
+                    <FontAwesomeIcon icon={faShieldAlt} className={`${authStyles.inputIcon} text-blue-400`} />
+                    <input
+                        name="recovery_pin"
+                        type={showPin ? "text" : "password"}
+                        required
+                        maxLength="6"
+                        className={`${authStyles.inputField} border-blue-200 focus:ring-blue-500`}
+                        placeholder="e.g. 1234"
+                        value={formData.recovery_pin}
+                        onChange={handleChange}
+                    />
+                    <FontAwesomeIcon 
+                        icon={showPin ? faEyeSlash : faEye} 
+                        className={authStyles.eyeIcon}
+                        onClick={() => setShowPin(!showPin)}
+                    />
+                 </div>
+              </div>
+
+              {/* PASSWORDS */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
+                  <div className={authStyles.inputGroup}>
+                     <label className={authStyles.label}>Password</label>
+                     <div className={authStyles.inputWrapper}>
+                        <FontAwesomeIcon icon={faLock} className={authStyles.inputIcon} />
+                        <input
+                            name="password"
+                            type={showPassword ? "text" : "password"}
+                            required
+                            className={authStyles.inputField}
+                            placeholder="••••••"
+                            value={formData.password}
+                            onChange={handleChange}
+                        />
+                        <FontAwesomeIcon 
+                            icon={showPassword ? faEyeSlash : faEye} 
+                            className={authStyles.eyeIcon}
+                            onClick={() => setShowPassword(!showPassword)}
+                        />
+                     </div>
+                  </div>
+                  <div className={authStyles.inputGroup}>
+                     <label className={authStyles.label}>Confirm</label>
+                     <div className={authStyles.inputWrapper}>
+                        <FontAwesomeIcon icon={faLock} className={authStyles.inputIcon} />
+                        <input
+                            name="password_confirmation"
+                            type={showConfirm ? "text" : "password"}
+                            required
+                            className={authStyles.inputField}
+                            placeholder="••••••"
+                            value={formData.password_confirmation}
+                            onChange={handleChange}
+                        />
+                        <FontAwesomeIcon 
+                            icon={showConfirm ? faEyeSlash : faEye} 
+                            className={authStyles.eyeIcon}
+                            onClick={() => setShowConfirm(!showConfirm)}
+                        />
+                     </div>
+                  </div>
+              </div>
+
+              {/* HELPER TEXT */}
+              <div className="text-xs text-gray-500 mb-6 flex gap-2 items-start bg-gray-50 p-2 rounded-lg border border-gray-100">
+                  <FontAwesomeIcon icon={faInfoCircle} className="text-rose-500 mt-0.5" />
+                  <p>
+                    Password must be <strong>8+ chars</strong> and include at least <strong>1 Capital</strong>, <strong>1 Number</strong>, and <strong>1 Symbol</strong>.
+                  </p>
+              </div>
+
+              {/* --- ADMIN TOGGLE SECTION --- */}
+              <div className="mb-4">
+                  <button 
+                    type="button"
+                    onClick={() => setShowAdminInput(!showAdminInput)}
+                    className="text-xs text-gray-400 hover:text-rose-600 font-semibold flex items-center gap-1 transition"
+                  >
+                     <FontAwesomeIcon icon={faUserShield} /> 
+                     {showAdminInput ? "Hide Admin Options" : "Register as Admin?"}
+                  </button>
+
+                  {/* Hidden Admin Input */}
+                  {showAdminInput && (
+                      <div className="mt-2 animate-fade-in-down">
+                        <label className={`${authStyles.label} text-gray-500`}>Admin Secret Code</label>
+                        <input 
+                            name="admin_code"
+                            type="password"
+                            className="w-full p-2 rounded-lg border border-gray-300 focus:border-rose-500 outline-none text-sm"
+                            placeholder="Enter secret code..."
+                            value={formData.admin_code}
+                            onChange={handleChange}
+                        />
+                      </div>
+                  )}
+              </div>
+
+              {/* SUBMIT BUTTON */}
+              <button
+                type="submit"
+                disabled={isLoading}
+                className={isLoading ? authStyles.btnDisabled : authStyles.btnPrimary}
+              >
+                {isLoading ? "Creating Account..." : (
+                    <>Sign Up <FontAwesomeIcon icon={faUserPlus} /></>
+                )}
+              </button>
+
+              {/* FOOTER */}
+              <p className={authStyles.footerText}>
+                Already have an account? 
+                <Link to='/signin' className={authStyles.linkText}>
+                    Login here
+                </Link>
+              </p>
+
+            </form>
         </div>
       </div>
     </div>
