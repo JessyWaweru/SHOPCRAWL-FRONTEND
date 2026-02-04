@@ -4,88 +4,86 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEye } from "@fortawesome/free-solid-svg-icons";
 
 function ProductItem(props) {
-  // Destructure the common fields
-  const { id, image, name } = props;
+  const { id, image, name, amazon_data, jumia_data, kilimall_data, shopify_data } = props;
 
-  // --- 1. PRICE RANGE LOGIC ---
+  // --- PRICE LOGIC ---
+  const vendors = [amazon_data, jumia_data, kilimall_data, shopify_data];
   
-  // Collect all potential prices from the props
-  // (Ensure your Backend Serializer actually sends these fields!)
-  const potentialPrices = [
-    props.price,
-    props.amazon_price,
-    props.jumia_price,
-    props.kilimall_price,
-    props.shopify_price
-  ];
-
-  // Filter out: non-numbers, nulls, undefined, and zeros
-  const validPrices = potentialPrices
-    .map(p => parseFloat(p))
+  const validPrices = vendors
+    .filter(v => v && v.price)
+    .map(v => parseFloat(v.price))
     .filter(p => !isNaN(p) && p > 0);
 
-  let priceDisplay = "Sold Out"; // Default if no prices exist
+  let priceDisplay = "Sold Out";
 
   if (validPrices.length > 0) {
     const minPrice = Math.min(...validPrices);
     const maxPrice = Math.max(...validPrices);
-
-    const formatter = new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'KSH',
-        maximumFractionDigits: 0, // Remove cents for cleaner look (optional)
+    const formatter = new Intl.NumberFormat('en-KE', {
+        style: 'currency', 
+        currency: 'KES', 
+        minimumFractionDigits: 0, 
+        maximumFractionDigits: 0
     });
 
-    if (minPrice !== maxPrice) {
-        // We have a range (e.g. $100 - $150)
-        priceDisplay = `${formatter.format(minPrice)} - ${formatter.format(maxPrice)}`;
-    } else {
-        // Single price
-        priceDisplay = formatter.format(minPrice);
-    }
+    priceDisplay = minPrice !== maxPrice 
+        ? `${formatter.format(minPrice)} - ${formatter.format(maxPrice)}`
+        : formatter.format(minPrice);
   }
 
   return (
-    <div className="group relative bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden w-72">
+    // Changed w-full to max-w-sm to prevent it from getting huge on wide screens
+    <div className="group relative bg-white rounded-lg shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden w-full max-w-xs mx-auto flex flex-col border border-gray-100">
       
-      {/* 1. IMAGE CONTAINER */}
-      <div className="relative h-64 w-full overflow-hidden bg-gray-100 flex items-center justify-center">
+      {/* 1. IMAGE CONTAINER (Reduced Height to h-48) */}
+      <div className="relative h-48 w-full overflow-hidden bg-gray-50 flex items-center justify-center">
         <img 
-            src={image} 
+            src={image || "https://via.placeholder.com/300"} 
             alt={name} 
-            className="h-full w-full object-contain p-4 transition-transform duration-500 group-hover:scale-110"
+            className="h-full w-full object-contain p-3 transition-transform duration-500 group-hover:scale-110"
         />
 
+        {/* Store Count Badge (Smaller) */}
+        {validPrices.length > 0 && (
+            <span className="absolute top-2 right-2 bg-rose-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm z-10 uppercase tracking-wide">
+                {validPrices.length} Stores
+            </span>
+        )}
+
         {/* HOVER OVERLAY */}
-        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-[1px]">
+        <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-[1px]">
             <Link to={`/products/${id}`}>
+                {/* Smaller Button */}
                 <button 
                     title="View Details"
-                    className="bg-white text-gray-900 p-4 rounded-full hover:bg-rose-600 hover:text-white transition-all duration-300 transform hover:scale-110 shadow-lg"
+                    className="bg-white text-gray-900 p-3 rounded-full hover:bg-rose-600 hover:text-white transition-all duration-300 transform hover:scale-110 shadow-lg"
                 >
-                    <FontAwesomeIcon icon={faEye} className="text-xl"/>
+                    <FontAwesomeIcon icon={faEye} className="text-sm"/>
                 </button>
             </Link>
         </div>
       </div>
 
-      {/* 2. PRODUCT INFO */}
-      <div className="p-4 text-center">
-        <h3 className="text-gray-800 font-bold text-lg truncate mb-1 group-hover:text-rose-600 transition-colors">
+      {/* 2. PRODUCT INFO (Tighter Padding) */}
+      <div className="p-3 text-center flex flex-col flex-grow justify-between">
+        {/* Smaller Title Font */}
+        <h3 className="text-gray-700 font-semibold text-sm truncate mb-1 group-hover:text-rose-600 transition-colors" title={name}>
             {name}
         </h3>
         
         {/* PRICE DISPLAY */}
-        <p className="text-rose-600 font-bold text-lg">
-            {priceDisplay}
-        </p>
-        
-        {/* Optional: Label to indicate it's a comparison */}
-        {validPrices.length > 1 && (
-            <p className="text-xs text-gray-400 uppercase tracking-wide font-semibold mt-1">
-                From {validPrices.length} Stores
+        <div className="mt-1">
+            <p className={`font-bold text-base ${validPrices.length > 0 ? "text-rose-600" : "text-gray-400"}`}>
+                {priceDisplay}
             </p>
-        )}
+            
+            {/* Comparison Label */}
+            {validPrices.length > 1 && (
+                <p className="text-[10px] text-gray-400 uppercase tracking-wide font-medium">
+                    Compare {validPrices.length} Vendors
+                </p>
+            )}
+        </div>
       </div>
 
     </div>

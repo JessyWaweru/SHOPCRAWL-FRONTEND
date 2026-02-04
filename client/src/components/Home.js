@@ -3,6 +3,16 @@ import Highlights from "./Highlights";
 import { Link } from "react-router-dom";
 import ProductsHome from "./ProductsHome";
 import { useAuthContext } from "../providers/Auth.provider";
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { 
+    faUserShield,   // Best for "Admin Account"
+    faEdit,         // Edit / Update
+    faTrash,        // Delete
+    faPlusCircle,   // Add New Product
+    faCog,          // Settings / Configuration
+    faChartLine,    // Dashboard / Analytics
+    faUnlockAlt     // Admin Access Granted
+} from '@fortawesome/free-solid-svg-icons';
 
 function Home() {
   const auth = useAuthContext();
@@ -37,20 +47,28 @@ function Home() {
           {/* ---------------- ADMIN VIEW ---------------- */}
           {isAdmin ? (
             <div className="animate-fade-in-up">
-              <h4 className="text-6xl font-semibold uppercase tracking-wide">
-                HELLO, <span className="text-rose-600">ADMIN!</span>
-              </h4>
-              <h2 className="text-5xl font-semibold uppercase mt-4">
-                WELCOME TO <br />
-                <span className="text-rose-600">SHOPCRAWL</span>
-              </h2>
+             <h4 className="text-6xl font-semibold uppercase tracking-wide">
+        
+        <span className="text-white inline-flex items-center gap-4">
+            <FontAwesomeIcon icon={faUserShield}  className="text-rose-600 " />
+            ADMIN 
+        </span>
+    </h4>
               
               <div className="mt-8 space-y-4 border-l-4 border-rose-600 pl-6">
                 <h3 className="text-2xl font-semibold uppercase">
-                   <span className="text-rose-600">##</span> Fine tune the <span className="underline decoration-rose-600">Database</span>
-                </h3>
+                  
+    <span className="text-white rounded-md flex items-center gap-1">
+        <FontAwesomeIcon icon={faUnlockAlt} className="text-rose-500" />
+      Fine tune the Database
+    </span>
+
+      </h3>
                 <h3 className="text-2xl font-semibold uppercase">
-                   <span className="text-rose-600">##</span> With <span className="underline decoration-rose-600">Update</span> and <span className="underline decoration-rose-600">Delete</span> features
+                  <span className=" text-white rounded-md flex items-center gap-1">
+        <FontAwesomeIcon icon={faUnlockAlt} className="text-rose-500" />
+      with update and delete options
+    </span>
                 </h3>
                 
                 <Link to="/addProduct">

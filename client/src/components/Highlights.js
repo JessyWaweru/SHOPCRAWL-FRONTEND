@@ -32,7 +32,7 @@ function Highlights() {
             ON-DEMAND RANKINGS
         </h3>
         <p className="text-center text-sm leading-relaxed">
-            The search results will be automatically ranked by cost and marginal benefits. Find exactly what works for your budget.
+            The search results will  automatically rank stores by best value. Find exactly what works for your budget.
         </p>
       </div>
       

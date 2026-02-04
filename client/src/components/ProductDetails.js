@@ -5,6 +5,9 @@ import Table from "./Table"; // The SmartRank Algorithm Table
 import { CartContext } from "./CartProvider";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faInfoCircle, faTrophy, faArrowLeft } from "@fortawesome/free-solid-svg-icons";
+import { toast, ToastContainer } from "react-toastify"; // Added for clean alerts
+import "react-toastify/dist/ReactToastify.css"; 
+import DeleteModal from "./DeleteModal"; // <--- IMPORT YOUR NEW MODAL
 
 function ProductDetails() {
   const { id } = useParams();
@@ -15,6 +18,9 @@ function ProductDetails() {
   const { user } = useAuthContext(); 
   const { cart } = useContext(CartContext);
   const [isAdmin, setIsAdmin] = useState(false);
+
+  // New State for the Delete Modal
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   // ==========================================
   // 1. FETCH PRODUCT DATA
@@ -35,14 +41,13 @@ function ProductDetails() {
   useEffect(() => {
     // Only run if product is loaded AND user is logged in
     if (product && user) {
-        // Assuming you store the token in localStorage upon login
         const token = localStorage.getItem("token"); 
 
         fetch('http://127.0.0.1:8000/api/history/', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Token ${token}` // Required for @permission_classes([IsAuthenticated])
+                'Authorization': `Token ${token}` 
             },
             body: JSON.stringify({ product_id: id })
         })
@@ -57,7 +62,6 @@ function ProductDetails() {
   // 3. CHECK ADMIN STATUS
   // ==========================================
   useEffect(() => {
-    // Double check against localStorage or Context to show Admin buttons
     const storedUser = JSON.parse(localStorage.getItem('user'));
     if (storedUser && storedUser.admin === true) {
       setIsAdmin(true);
@@ -65,23 +69,40 @@ function ProductDetails() {
   }, []);
 
   // ==========================================
-  // 4. HANDLE DELETE
+  // 4. DELETE LOGIC (UPDATED)
   // ==========================================
-  const handleDelete = () => {
-    if (!window.confirm("Are you sure you want to delete this product?")) return;
+  
+  // Step A: Open the Modal (Instead of window.confirm)
+  const handleDeleteClick = () => {
+    setIsDeleteModalOpen(true);
+  };
 
-    fetch(`http://127.0.0.1:8000/api/products/${id}/`, {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-    })
-      .then((response) => {
+  // Step B: Actually Delete (Passed to Modal)
+  const confirmDelete = async () => {
+    try {
+        const token = localStorage.getItem("token");
+        const response = await fetch(`http://127.0.0.1:8000/api/products/${id}/`, {
+            method: "DELETE",
+            headers: { 
+                "Content-Type": "application/json",
+                "Authorization": `Token ${token}` // Ensure Admin Token is sent
+            },
+        });
+
         if (response.ok) {
-            navigate("/products"); // Redirect cleanly to products list
+            toast.success("Product deleted successfully!");
+            setIsDeleteModalOpen(false);
+            // Wait 1.5s for the toast to show, then redirect
+            setTimeout(() => navigate("/products"), 1500); 
         } else {
-            alert("Failed to delete product");
+            toast.error("Failed to delete product.");
+            setIsDeleteModalOpen(false);
         }
-      })
-      .catch((error) => console.error("Error:", error));
+    } catch (error) {
+        console.error("Error:", error);
+        toast.error("Server error occurred.");
+        setIsDeleteModalOpen(false);
+    }
   };
 
   // Loading State
@@ -98,6 +119,8 @@ function ProductDetails() {
         backgroundImage: `url('https://images.unsplash.com/photo-1637625854255-d893202554f4?ixlib=rb-4.0.3&auto=format&fit=crop&w=1854&q=80')`
       }}
     >
+        <ToastContainer position="top-center" />
+        
         {/* Navigation Bar / Back Button */}
         <div className="bg-gray-900/80 p-4 text-white">
             <Link to="/products" className="hover:text-rose-400 transition flex items-center gap-2 w-fit font-medium">
@@ -112,7 +135,6 @@ function ProductDetails() {
                     {product.name}
                 </h1>
                 <p className="text-gray-300 text-center pb-6 italic font-light max-w-2xl mx-auto">
-                    {/* Shows the 'about' field if it exists, otherwise falls back to start of description */}
                     {product.about || (product.description ? product.description.substring(0, 100) + "..." : "Compare prices across top vendors.")}
                 </p>
             </div>
@@ -138,8 +160,9 @@ function ProductDetails() {
                                     Update
                                 </button>
                             </Link>
+                            {/* CHANGED: Calls handleDeleteClick instead of direct delete */}
                             <button
-                                onClick={handleDelete}
+                                onClick={handleDeleteClick}
                                 className="bg-red-600 rounded-lg px-6 py-2 text-white font-semibold hover:bg-red-700 transition shadow-md"
                             >
                                 Delete
@@ -173,8 +196,6 @@ function ProductDetails() {
                             </h3>
                         </div>
                         
-                        {/* We pass the full 'product' object to Table.js, 
-                            which calculates the scores based on Price + Shipping + Reviews */}
                         <div className="w-full">
                             <Table product={product} />
                         </div>
@@ -183,6 +204,15 @@ function ProductDetails() {
                 </div>
             </div>
         </div>
+
+        {/* --- THE NEW DELETE MODAL --- */}
+        <DeleteModal 
+            isOpen={isDeleteModalOpen}
+            onClose={() => setIsDeleteModalOpen(false)}
+            onConfirm={confirmDelete}
+            title="Delete Product?"
+            message={`Are you sure you want to permanently delete "${product.name}"?`}
+        />
     </div>
   );
 }

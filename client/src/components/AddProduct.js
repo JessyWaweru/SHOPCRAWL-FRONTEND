@@ -1,39 +1,65 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import ProductForm from "./ProductForm";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 export default function AddProduct() {
   const [errorMsg, setErrorMsg] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
 
+  // --- LOGIC: ONLY HANDLE CREATION (POST) ---
   const handleCreateProduct = async (productDetails) => {
+    setIsSubmitting(true);
+    setErrorMsg("");
+
     try {
-      // POST request to Django to create a new product
+      const token = localStorage.getItem("token");
+
       const response = await fetch("http://127.0.0.1:8000/api/products/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "Authorization": `Token ${token}` // Admin Token
         },
         body: JSON.stringify(productDetails),
       });
 
       if (response.ok) {
-        // Redirect to the main products page on success
-        navigate("/products");
+        toast.success("Product created successfully!");
+        setTimeout(() => navigate("/products"), 1500);
       } else {
-        setErrorMsg("Failed to create product. Please check your inputs.");
+        const errorData = await response.json();
+        console.error("Validation Errors:", errorData);
+        
+        // Format errors for display
+        const formattedErrors = Object.entries(errorData)
+            .map(([field, msgs]) => `${field}: ${msgs}`)
+            .join(" | ");
+
+        setErrorMsg(formattedErrors || "Failed to create product.");
+        toast.error("Please check the form for errors.");
       }
     } catch (error) {
       console.error("Error creating product:", error);
-      setErrorMsg("Server error. Please try again later.");
+      setErrorMsg("Server connection failed.");
+      toast.error("Server Error");
+    } finally {
+        setIsSubmitting(false);
     }
   };
 
   return (
-    <ProductForm
-      isUpdatePage={false}
-      handleSubmit={handleCreateProduct}
-      errorMsg={errorMsg}
-    />
+    <div>
+        <ToastContainer />
+        {/* We pass isUpdatePage={false} so the form knows it's empty */}
+        <ProductForm
+            isUpdatePage={false}
+            handleSubmit={handleCreateProduct}
+            errorMsg={errorMsg}
+            isSubmitting={isSubmitting}
+        />
+    </div>
   );
 }

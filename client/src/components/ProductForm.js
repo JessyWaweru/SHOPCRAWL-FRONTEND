@@ -1,221 +1,266 @@
 import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faSave, faArrowLeft, faStore, faStar } from "@fortawesome/free-solid-svg-icons";
 
 export default function ProductForm({
-  isUpdatePage = false,
-  productData = undefined,
-  errorMsg,
   handleSubmit,
+  initialData,
+  isUpdatePage = false,
+  errorMsg = "",
+  isSubmitting = false,
 }) {
-  // --- 1. Basic Product State ---
-  const [name, setName] = useState(productData?.name || "");
-  const [description, setDescription] = useState(productData?.description || "");
-  const [about, setAbout] = useState(productData?.about || "");
-  const [image, setImage] = useState(productData?.image || "");
+  // 1. INITIAL STATE
+  const [formData, setFormData] = useState({
+    name: "",
+    about: "",
+    image: "",
+    description: "", // Hidden field required by backend
 
-  // --- 2. Vendor State (Nested Objects) ---
-  // We define a default empty structure for a vendor
-  const defaultVendor = {
-    price: "",
-    shipping_cost: "",
-    days_to_ship: "",
-    review: "",
-    product_location: "",
-  };
+    // Amazon
+    amazon_price: 0,
+    amazon_shipping: 0,
+    amazon_days: 0,
+    amazon_location: "",
+    amazon_reviews: 0,
 
-  // We initialize state with existing data OR the default empty structure
-  const [amazon, setAmazon] = useState(productData?.amazon || defaultVendor);
-  const [jumia, setJumia] = useState(productData?.jumia || defaultVendor);
-  const [kilimall, setKilimall] = useState(productData?.kilimall || defaultVendor);
-  const [shopify, setShopify] = useState(productData?.shopify || defaultVendor);
+    // Jumia
+    jumia_price: 0,
+    jumia_shipping: 0,
+    jumia_days: 0,
+    jumia_location: "",
+    jumia_reviews: 0,
 
-  // --- 3. Helper to update nested vendor state ---
-  const handleVendorChange = (vendorName, field, value) => {
-    // Determine which setter to use based on vendorName
-    let setVendor;
-    let currentVendorData;
+    // Kilimall
+    kilimall_price: 0,
+    kilimall_shipping: 0,
+    kilimall_days: 0,
+    kilimall_location: "",
+    kilimall_reviews: 0,
 
-    switch (vendorName) {
-      case "amazon":
-        setVendor = setAmazon;
-        currentVendorData = amazon;
-        break;
-      case "jumia":
-        setVendor = setJumia;
-        currentVendorData = jumia;
-        break;
-      case "kilimall":
-        setVendor = setKilimall;
-        currentVendorData = kilimall;
-        break;
-      case "shopify":
-        setVendor = setShopify;
-        currentVendorData = shopify;
-        break;
-      default:
-        return;
+    // Shopify
+    shopify_price: 0,
+    shopify_shipping: 0,
+    shopify_days: 0,
+    shopify_location: "",
+    shopify_reviews: 0,
+  });
+
+  // 2. PRE-FILL LOGIC
+  useEffect(() => {
+    if (initialData) {
+      setFormData((prev) => ({
+        ...prev,
+        ...initialData,
+      }));
+    }
+  }, [initialData]);
+
+  // 3. HANDLE INPUT CHANGE
+  const handleChange = (e) => {
+    const { name, value, type } = e.target;
+    let finalValue = value;
+
+    // Handle numbers: keep empty string for editing, otherwise parse
+    if (type === "number") {
+        finalValue = value === "" ? "" : parseFloat(value);
     }
 
-    // Update the specific field while keeping other fields intact
-    setVendor({
-      ...currentVendorData,
-      [field]: value,
-    });
+    setFormData({ ...formData, [name]: finalValue });
   };
 
-  const onSubmit = (e) => {
+  // 4. SUBMIT
+ const onSubmit = (e) => {
     e.preventDefault();
-    
-    // --- 4. Construct the Nested JSON Object for Django ---
-    const newProduct = {
-      name,
-      description,
-      about,
-      image,
-      // Django expects these keys to be objects containing price, shipping, etc.
-      amazon: amazon,
-      jumia: jumia, 
-      kilimall: kilimall,
-      shopify: shopify,
+
+    // The backend requires 'description', but we hid the input.
+    // So we assume Description is the same as About.
+    const finalData = {
+        ...formData,
+        description: formData.description || formData.about || "No description provided." 
     };
-    
-    handleSubmit(newProduct);
+
+    handleSubmit(finalData);
   };
 
-  // --- 5. Helper Component to Render Inputs DRY (Don't Repeat Yourself) ---
-  const renderVendorInputs = (vendorName, vendorData) => (
-    <div className="border p-4 rounded-lg bg-gray-50 mb-4">
-      <h3 className="text-xl font-bold uppercase text-gray-700 mb-2 border-b border-gray-300 pb-1">
-        {vendorName} Details
-      </h3>
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Price</label>
-          <input
-            type="number"
-            value={vendorData.price}
-            onChange={(e) => handleVendorChange(vendorName, "price", e.target.value)}
-            className="border rounded w-full p-2"
-            placeholder="0.00"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Shipping Cost</label>
-          <input
-            type="number"
-            value={vendorData.shipping_cost}
-            onChange={(e) => handleVendorChange(vendorName, "shipping_cost", e.target.value)}
-            className="border rounded w-full p-2"
-            placeholder="0.00"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Days to Ship</label>
-          <input
-            type="number"
-            value={vendorData.days_to_ship}
-            onChange={(e) => handleVendorChange(vendorName, "days_to_ship", e.target.value)}
-            className="border rounded w-full p-2"
-            placeholder="e.g. 5"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Review (1-10)</label>
-          <input
-            type="number"
-            value={vendorData.review}
-            onChange={(e) => handleVendorChange(vendorName, "review", e.target.value)}
-            className="border rounded w-full p-2"
-            placeholder="e.g. 8"
-          />
-        </div>
-        <div className="col-span-2">
-          <label className="block text-sm font-medium text-gray-700">Product Location</label>
-          <input
-            type="text"
-            value={vendorData.product_location}
-            onChange={(e) => handleVendorChange(vendorName, "product_location", e.target.value)}
-            className="border rounded w-full p-2"
-            placeholder="e.g. Westlands"
-          />
+  // --- RENDER VENDOR SECTION ---
+  const renderVendorSection = (vendorName, colorClass) => {
+    const prefix = vendorName.toLowerCase(); 
+    
+    return (
+      <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 mb-6 shadow-sm">
+        <h3 className={`text-xl font-bold mb-4 uppercase flex items-center gap-2 ${colorClass}`}>
+          <FontAwesomeIcon icon={faStore} /> {vendorName}
+        </h3>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {/* Price */}
+          <div>
+            <label className="block text-gray-700 text-xs font-bold mb-2 uppercase">Price (KES)</label>
+            <input
+              type="number"
+              name={`${prefix}_price`}
+              value={formData[`${prefix}_price`]}
+              onChange={handleChange}
+              className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-rose-500 outline-none"
+              placeholder="0"
+            />
+          </div>
+
+          {/* Shipping Cost */}
+          <div>
+            <label className="block text-gray-700 text-xs font-bold mb-2 uppercase">Shipping Cost</label>
+            <input
+              type="number"
+              name={`${prefix}_shipping`}
+              value={formData[`${prefix}_shipping`]}
+              onChange={handleChange}
+              className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-rose-500 outline-none"
+              placeholder="0"
+            />
+          </div>
+
+          {/* Delivery Days */}
+          <div>
+            <label className="block text-gray-700 text-xs font-bold mb-2 uppercase">Delivery Days</label>
+            <input
+              type="number"
+              name={`${prefix}_days`}
+              value={formData[`${prefix}_days`]}
+              onChange={handleChange}
+              className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-rose-500 outline-none"
+              placeholder="0"
+            />
+          </div>
+
+          {/* Location (Manual Input) */}
+          <div>
+            <label className="block text-gray-700 text-xs font-bold mb-2 uppercase">Location</label>
+            <input
+              type="text"
+              name={`${prefix}_location`}
+              value={formData[`${prefix}_location`]}
+              onChange={handleChange}
+              className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-rose-500 outline-none"
+              placeholder="e.g. Nairobi CBD"
+            />
+          </div>
+
+          {/* Average Reviews (0 - 10) */}
+          <div>
+            <label className="block text-gray-700 text-xs font-bold mb-2 uppercase flex items-center gap-1">
+                Average Rating <FontAwesomeIcon icon={faStar} className="text-yellow-400 text-xs"/>
+            </label>
+            <input
+              type="number"
+              name={`${prefix}_reviews`}
+              value={formData[`${prefix}_reviews`]}
+              onChange={handleChange}
+              step="0.1"
+              min="0"
+              max="10" 
+              className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-rose-500 outline-none"
+              placeholder="0.0 - 10.0"
+            />
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
-    <div className="flex items-center justify-center min-h-screen mb-5 mt-10">
-      <form
-        onSubmit={onSubmit}
-        className="w-3/4 border rounded-lg shadow-lg p-6 flex flex-col gap-6 bg-white"
-      >
-        <h1 className="text-center text-3xl text-rose-600 uppercase font-bold">
-          {isUpdatePage ? "Update Product" : "Create New Product"}
-        </h1>
+    <div className="min-h-screen bg-gray-50 py-10 px-4">
+      <div className="max-w-5xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
         
+        {/* Header */}
+        <div className="bg-gray-900 p-6 flex justify-between items-center text-white">
+          <Link to="/products" className="text-gray-300 hover:text-white transition flex items-center gap-2">
+            <FontAwesomeIcon icon={faArrowLeft} /> Back
+          </Link>
+          <h1 className="text-2xl font-bold">
+            {isUpdatePage ? "Update Product" : "Add New Product"}
+          </h1>
+        </div>
+
+        {/* Error Message */}
         {errorMsg && (
-          <p className="text-center text-xl text-red-500 bg-red-100 p-2 rounded">
-            {errorMsg}
-          </p>
+          <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 m-6 rounded shadow-sm">
+            <p className="font-bold">Error</p>
+            <p>{errorMsg}</p>
+          </div>
         )}
 
-        {/* --- General Details Section --- */}
-        <div className="space-y-4">
-            <h2 className="text-2xl text-gray-800 font-semibold">General Info</h2>
-            <div>
-            <label className="font-bold">Name</label>
-            <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="border rounded-lg w-full p-3 text-gray-700"
-                required
-            />
-            </div>
-            <div>
-            <label className="font-bold">Image URL</label>
-            <input
-                type="text"
-                value={image}
-                onChange={(e) => setImage(e.target.value)}
-                className="border rounded-lg w-full p-3 text-gray-700"
-            />
-            </div>
-            <div>
-            <label className="font-bold">Description</label>
-            <textarea
-                rows="3"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                className="border rounded-lg w-full p-3 text-gray-700"
-            />
-            </div>
-            <div>
-            <label className="font-bold">About (Short Summary)</label>
-            <input
-                type="text"
-                className="border rounded-lg w-full p-3 text-gray-700"
-                value={about}
-                onChange={(e) => setAbout(e.target.value)}
-            />
-            </div>
-        </div>
+        <form onSubmit={onSubmit} className="p-8">
+          
+          {/* --- BASIC INFO SECTION --- */}
+          <div className="mb-8 bg-blue-50/50 p-6 rounded-xl border border-blue-100">
+            <h2 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Basic Details</h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label className="block text-gray-700 text-sm font-bold mb-2">Product Name</label>
+                    <input
+                        type="text"
+                        name="name"
+                        value={formData.name}
+                        onChange={handleChange}
+                        className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-rose-500 outline-none"
+                        required
+                    />
+                </div>
 
-        {/* --- Vendor Details Sections --- */}
-        <h2 className="text-2xl text-gray-800 font-semibold mt-4">Vendor Pricing</h2>
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-            {renderVendorInputs("amazon", amazon)}
-            {renderVendorInputs("jumia", jumia)}
-            {renderVendorInputs("kilimall", kilimall)}
-            {renderVendorInputs("shopify", shopify)}
-        </div>
+                <div>
+                    <label className="block text-gray-700 text-sm font-bold mb-2">Image URL</label>
+                    <input
+                        type="text"
+                        name="image"
+                        value={formData.image}
+                        onChange={handleChange}
+                        className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-rose-500 outline-none"
+                        required
+                    />
+                </div>
+            </div>
 
-        <button
-          type="submit"
-          className="bg-rose-600 rounded-lg w-1/2 p-3 mt-4 text-white hover:opacity-80 m-auto font-bold text-lg shadow-md"
-        >
-          {isUpdatePage ? "Update Product" : "Create Product"}
-        </button>
-      </form>
+            <div className="mt-4">
+                <label className="block text-gray-700 text-sm font-bold mb-2">About / Description</label>
+                <textarea
+                    name="about"
+                    value={formData.about}
+                    onChange={handleChange}
+                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-rose-500 outline-none h-24 resize-none"
+                    placeholder="Brief summary of the product..."
+                    required
+                />
+            </div>
+          </div>
+
+          {/* --- VENDOR SECTIONS --- */}
+          <h2 className="text-xl font-bold text-gray-800 mb-6 pb-2 border-b">Vendor Pricing & Details</h2>
+          
+          {renderVendorSection("Amazon", "text-orange-500")}
+          {renderVendorSection("Jumia", "text-black")}
+          {renderVendorSection("Kilimall", "text-purple-600")}
+          {renderVendorSection("Shopify", "text-green-600")}
+
+          {/* Submit Button */}
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className={`w-full bg-rose-600 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-rose-700 transition transform hover:scale-[1.01] active:scale-95 flex items-center justify-center gap-2 text-lg ${
+                isSubmitting ? "opacity-50 cursor-not-allowed" : ""
+            }`}
+          >
+             {isSubmitting ? "Processing..." : (
+                 <>
+                    <FontAwesomeIcon icon={faSave} />
+                    {isUpdatePage ? "Save Changes" : "Create Product"}
+                 </>
+             )}
+          </button>
+
+        </form>
+      </div>
     </div>
   );
 }
