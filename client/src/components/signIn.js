@@ -74,7 +74,7 @@ function SignIn() {
             {/* Logo Area */}
             <div className={authStyles.brandContent}>
                 <div className="flex flex-col items-center text-center text-white mb-8">
-                    <div className="bg-white/20 p-4 rounded-2xl backdrop-blur-md mb-4 shadow-inner">
+                    <div className="bg-white/20 p-4 rounded-2xl backdrop-blur-md mb-6 shadow-inner">
                         <FontAwesomeIcon icon={faShoppingBag} className="text-4xl"/>
                     </div>
                     <span className="text-3xl font-extrabold tracking-tight">Shopcrawl.</span>
