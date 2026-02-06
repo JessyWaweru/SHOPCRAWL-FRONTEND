@@ -37,4 +37,4 @@ export const AuthProvider = ({ children, required }) => {
 
 export default AuthProvider;
 
-export const useAuthContext = () => useContext(AuthContext);
+export const useAuthContext = () => useContext(AuthContext);~

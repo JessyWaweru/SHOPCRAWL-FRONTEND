@@ -88,6 +88,9 @@ function SignUp() {
 
     // --- 3. PREPARE DATA ---
     const userPayload = {
+        // BACKEND COMPATIBILITY: 
+        // Django's User model requires a unique 'username'. 
+        // We map 'email' to 'username' to allow email-based login.
         username: email, 
         email: email,
         password: password,
