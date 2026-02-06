@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-
+import { API_URL } from '../config';
 // Icons
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
@@ -38,7 +38,7 @@ export default function ResetPassword() {
     try {
       // 1. Fetch Users to find the matching email
       // (In a real app, you would have a specific endpoint like /api/check-email)
-      const response = await fetch("http://127.0.0.1:8000/api/users/");
+      const response = await fetch(`${API_URL}/api/users/`);
       
       if (!response.ok) throw new Error("Could not connect to server");
       
@@ -60,7 +60,7 @@ export default function ResetPassword() {
 
         // 4. Update Password (PATCH request)
         // Now that serializers.py is fixed, this 'password' will be hashed properly.
-        const updateResponse = await fetch(`http://127.0.0.1:8000/api/users/${user.id}/`, {
+        const updateResponse = await fetch(`${API_URL}/api/users/${user.id}/`, {
             method: 'PATCH',
             headers: { 
                 "Content-Type": "application/json",

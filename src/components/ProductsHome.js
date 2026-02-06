@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import ProductItem from "./productItem"; // Ensure filename matches your system
-
+import { API_URL } from '../config';
 // Icons
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faStar, faArrowRight, faLayerGroup } from "@fortawesome/free-solid-svg-icons";
@@ -13,7 +13,7 @@ function ProductsHome() {
   const [products, setProducts] = useState([]);
 
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/api/products/")
+    fetch(`${API_URL}/api/products/`)
       .then((response) => {
         if (!response.ok) {
             throw new Error("Failed to fetch products");

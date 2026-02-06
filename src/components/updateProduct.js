@@ -4,6 +4,7 @@ import ProductForm from "./ProductForm";
 import { toast, ToastContainer } from "react-toastify";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSpinner } from "@fortawesome/free-solid-svg-icons";
+import { API_URL } from '../config';
 
 // --- IMPORT STYLES ---
 import { updateProductStyles } from "../styles/UpdateProductStyles";
@@ -18,7 +19,7 @@ export default function UpdateProduct() {
   useEffect(() => {
     if (!id) return; 
 
-    fetch(`http://127.0.0.1:8000/api/products/${id}/`)
+    fetch(`${API_URL}/api/products/${id}/`)
       .then((res) => {
         if (!res.ok) throw new Error("Product not found");
         return res.json();
@@ -79,7 +80,7 @@ export default function UpdateProduct() {
             updatedDetails.description = updatedDetails.about || "No description provided.";
         }
 
-        const response = await fetch(`http://127.0.0.1:8000/api/products/${id}/`, {
+        const response = await fetch(`${API_URL}/api/products/${id}/`, {
             method: "PUT",
             headers: {
                 "Content-Type": "application/json",

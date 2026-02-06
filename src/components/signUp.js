@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-
+import { API_URL } from '../config';
 // Import Auth Context
 import { useAuthContext } from "../providers/Auth.provider";
 
@@ -100,7 +100,7 @@ function SignUp() {
 
     try {
       // --- STEP A: CREATE ACCOUNT ---
-      const registerResponse = await fetch("http://127.0.0.1:8000/api/users/", {
+      const registerResponse = await fetch(`${API_URL}/api/users/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(userPayload),
@@ -114,7 +114,7 @@ function SignUp() {
 
         // --- STEP B: AUTO-LOGIN ---
         try {
-            const loginResponse = await fetch("http://127.0.0.1:8000/api/login/", {
+            const loginResponse = await fetch(`${API_URL}/api/login/`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ email, password }),

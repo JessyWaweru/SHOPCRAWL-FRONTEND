@@ -4,6 +4,7 @@ import { useAuthContext } from "../providers/Auth.provider";
 import { CartContext } from "./CartProvider";
 import Table from "./Table"; 
 import DeleteModal from "./DeleteModal"; 
+import { API_URL } from '../config';
 
 // Icons & Toasts
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -26,7 +27,7 @@ function ProductDetails() {
 
   // --- 1. FETCH PRODUCT ---
   useEffect(() => {
-    fetch(`http://127.0.0.1:8000/api/products/${id}/`)
+    fetch(`${API_URL}/api/products/${id}/`)
       .then((response) => {
           if (!response.ok) throw new Error("Product not found");
           return response.json();
@@ -39,7 +40,7 @@ function ProductDetails() {
   useEffect(() => {
     if (product && user) {
         const token = localStorage.getItem("token"); 
-        fetch('http://127.0.0.1:8000/api/history/', {
+        fetch(`${API_URL}/api/history/`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -64,7 +65,7 @@ function ProductDetails() {
   const confirmDelete = async () => {
     try {
         const token = localStorage.getItem("token");
-        const response = await fetch(`http://127.0.0.1:8000/api/products/${id}/`, {
+        const response = await fetch(`${API_URL}/api/products/${id}/`, {
             method: "DELETE",
             headers: { 
                 "Content-Type": "application/json",

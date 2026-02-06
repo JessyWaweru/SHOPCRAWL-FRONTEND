@@ -3,7 +3,7 @@ import ProductItem from "./productItem";
 import { Link } from "react-router-dom";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faHistory, faArrowRight, faSpinner, faClock, faCalendarAlt } from "@fortawesome/free-solid-svg-icons";
-
+import { API_URL } from '../config';
 // --- IMPORT STYLES ---
 import { historyStyles } from "../styles/HistoryStyles";
 
@@ -27,7 +27,7 @@ function Cart() {
         return; 
     }
 
-    fetch('http://127.0.0.1:8000/api/history/', {
+    fetch(`${API_URL}/api/history/`, {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json',

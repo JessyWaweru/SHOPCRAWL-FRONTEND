@@ -3,6 +3,7 @@ import ProductItem from "./productItem";
 import Searchbar from "./Searchbar";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFire, faSearch } from "@fortawesome/free-solid-svg-icons";
+import { API_URL } from '../config';
 
 // --- IMPORT STYLES ---
 import { productsListStyles } from "../styles/ProductsListStyles";
@@ -14,7 +15,7 @@ const ProductsList = () => {
   
   // 1. Get all products
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/api/products/")
+    fetch(`${API_URL}/api/products/`)
       .then((response) => {
           if(!response.ok) throw new Error("Failed to fetch products");
           return response.json();
