@@ -133,7 +133,7 @@ function Table({ product }) {
                             <th className={tableStyles.th}>Store</th>
                             <th className={tableStyles.th}>Total Pay</th> 
                             <th className={tableStyles.th}>Shipping</th>
-                            <th className={tableStyles.th}>Rating</th>
+                            <th className={tableStyles.th}>Average Rating</th>
                             <th className={tableStyles.th}>Smart Score</th>
                             <th className={tableStyles.th}></th>
                         </tr>
